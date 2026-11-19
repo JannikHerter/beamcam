@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "open-webcam"
+version = "0.1.0"
+description = "Use your Android phone as a webcam on Linux"
+readme = "README.md"
+requires-python = ">=3.10"
+# PyGObject, GTK 4, libadwaita and GStreamer come from the distribution, not PyPI.
+dependencies = []
+
+[project.scripts]
+open-webcam = "openwebcam.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+openwebcam = ["data/setup-virtual-camera"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
