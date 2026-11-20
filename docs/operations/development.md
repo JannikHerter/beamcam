@@ -25,8 +25,26 @@ PYTHONPATH=src python3 -m beamcam -v stream 192.168.1.23 --no-camera --frames 30
 PYTHONPATH=src python3 -m unittest discover -s tests -t .
 ```
 
-`pipx install --system-site-packages ./apps/linux` installs an `beamcam` command instead
-(`--system-site-packages` lets it use the distribution's PyGObject and GStreamer).
+`pipx install --system-site-packages ./apps/linux` installs a `beamcam` command instead
+(`--system-site-packages` lets it use the distribution's PyGObject and GStreamer). It adds no
+menu entry or icon; only the packages below do.
+
+## Packages
+
+What users install. Both put the app in the app menu with its icon, and install the virtual
+camera helper with a polkit action, so the password prompt says what it is for.
+`apps/linux/packaging/install-data.sh` lists those files once for every package.
+
+```sh
+# Arch, Manjaro: build and install the checkout
+cd apps/linux/packaging/arch && makepkg -si
+# Debian 13+, Ubuntu 26.04+: builds in a container, writes apps/linux/packaging/dist/*.deb
+apps/linux/packaging/build-deb.sh
+sudo apt install ./apps/linux/packaging/dist/beamcam_*.deb
+```
+
+Older releases such as Ubuntu 24.04 lack `gstreamer1.0-gtk4`, which the preview needs.
+`makepkg` and `dpkg-buildpackage` leave `build/` in `apps/linux`; it is ignored by git.
 
 ## Emulator
 

@@ -55,6 +55,8 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
   - `ui.py` (GTK) and `cli.py` (scripts and tests) are thin layers over the controller. Only the
     window reconnects; the CLI exits so scripts see the failure.
   - `virtualcam.py` and `data/setup-virtual-camera` find and create the v4l2loopback device.
+  - `packaging/`: Arch and Debian packages. `install-data.sh` installs the menu entry, icon,
+    app info and helper for both; a new file in `apps/linux/data` goes there too.
 - `docs/internals/protocol.md` is the contract between the two apps.
 
 ## Hit every surface

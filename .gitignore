@@ -4,3 +4,7 @@ __pycache__/
 build/
 dist/
 .plans/
+# makepkg output
+apps/linux/packaging/arch/src/
+apps/linux/packaging/arch/pkg/
+*.pkg.tar.zst

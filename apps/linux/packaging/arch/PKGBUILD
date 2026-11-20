@@ -1,0 +1,25 @@
+# Builds the checkout this file lives in: cd apps/linux/packaging/arch && makepkg -si
+# An AUR package would download a release tarball into source=() instead.
+pkgname=beamcam
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Use your Android phone as a wireless webcam'
+arch=('any')
+url='https://github.com/JannikHerter/open-webcam'
+license=('LicenseRef-unknown')
+depends=(
+  'python' 'python-gobject' 'python-cryptography' 'gtk4' 'libadwaita' 'polkit'
+  'gstreamer' 'gst-plugins-base' 'gst-plugins-good' 'gst-plugins-bad' 'gst-libav' 'gst-plugin-gtk4'
+)
+optdepends=('v4l2loopback-dkms: the virtual camera other apps see (on Manjaro: linuxXY-v4l2loopback)')
+makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+
+build() {
+  cd "$startdir/../.."
+  python -m build --wheel --no-isolation --outdir "$srcdir/dist"
+}
+
+package() {
+  python -m installer --destdir="$pkgdir" "$srcdir"/dist/*.whl
+  sh "$startdir/../install-data.sh" "$pkgdir"
+}

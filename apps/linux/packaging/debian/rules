@@ -1,0 +1,10 @@
+#!/usr/bin/make -f
+export PYBUILD_NAME=beamcam
+# The unit tests run in development (AGENTS.md); the build chroot lacks GTK and GStreamer.
+export PYBUILD_DISABLE=test
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+execute_after_dh_auto_install:
+	sh packaging/install-data.sh debian/beamcam

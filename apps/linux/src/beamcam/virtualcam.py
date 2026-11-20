@@ -11,6 +11,7 @@ from pathlib import Path
 
 LABEL = "Beamcam"
 SYSFS = Path("/sys/class/video4linux")
+INSTALLED_HELPER = Path("/usr/lib/beamcam/setup-virtual-camera")
 
 
 @dataclass(frozen=True)
@@ -56,19 +57,20 @@ def module_installed() -> bool:
         return False
 
 
-def helper_path() -> str:
-    """The root helper; pkexec needs a real file path."""
-    installed = Path("/usr/libexec/beamcam/setup-virtual-camera")
-    if installed.exists():
-        return str(installed)
-    return str(resources.files("beamcam").joinpath("data/setup-virtual-camera"))
+def helper_command() -> list[str]:
+    """How pkexec runs the root helper. pkexec needs a real file path. A distro package installs
+    the helper with a polkit action, so the password prompt says what it is for; a checkout or a
+    pipx install runs the bundled copy through /bin/sh and gets the generic prompt."""
+    if INSTALLED_HELPER.exists():
+        return [str(INSTALLED_HELPER)]
+    return ["/bin/sh", str(resources.files("beamcam").joinpath("data/setup-virtual-camera"))]
 
 
 def run_helper(remove: bool = False) -> tuple[bool, str]:
     """Create (or remove) the virtual camera as root via pkexec. Returns (ok, error text)."""
     if shutil.which("pkexec") is None:
         return False, "pkexec is not installed"
-    command = ["pkexec", "/bin/sh", helper_path()]
+    command = ["pkexec", *helper_command()]
     if remove:
         command.append("--remove")
     try:

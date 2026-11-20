@@ -73,7 +73,8 @@ A UDP send error is just a lost datagram (`UdpLink.kt`); only the heartbeat or T
 
 v4l2loopback, because PipeWire cameras are not yet supported by every browser and most
 non-browser apps. The device is created with `exclusive_caps=1`; without it Chrome does not list
-it. Our helper (`apps/linux/src/beamcam/data/setup-virtual-camera`) runs via `pkexec`, finds or
+it. Our helper (`apps/linux/src/beamcam/data/setup-virtual-camera`, installed by the packages as
+`/usr/lib/beamcam/setup-virtual-camera` with a polkit action) runs via `pkexec`, finds or
 creates a device labelled "Beamcam", and persists the options only when no one else has
 configured `v4l2loopback`, so it never fights OBS or a manual setup. Watch out for DroidCam's
 `v4l2loopback_dc`, a different module with a similar name.

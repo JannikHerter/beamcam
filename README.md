@@ -17,8 +17,8 @@ The video goes straight from your phone to your computer over your Wi-Fi. Nothin
 
 ## Status
 
-Early development (0.1). Not released yet: build it from source with the
-[development runbook](docs/operations/development.md).
+Early development (0.1). Not released yet: build the packages yourself with the
+[development runbook](docs/operations/development.md#packages).
 
 ## Repository
 

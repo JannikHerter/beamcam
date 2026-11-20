@@ -1,0 +1,22 @@
+Source: beamcam
+Section: video
+Priority: optional
+Maintainer: Beamcam developers <maintainers@beamcam.invalid>
+Build-Depends: debhelper-compat (= 13), dh-python, pybuild-plugin-pyproject, python3-all, python3-setuptools
+Standards-Version: 4.7.0
+Homepage: https://github.com/JannikHerter/open-webcam
+Rules-Requires-Root: no
+
+Package: beamcam
+Architecture: all
+Depends: ${python3:Depends}, ${misc:Depends},
+ python3-gi, python3-cryptography,
+ gir1.2-gtk-4.0, gir1.2-adw-1, gir1.2-gstreamer-1.0, gir1.2-gdkpixbuf-2.0,
+ gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad,
+ gstreamer1.0-libav, gstreamer1.0-gtk4,
+ pkexec | policykit-1
+Recommends: v4l2loopback-dkms
+Description: Use your Android phone as a wireless webcam
+ Turn your Android phone into a wireless webcam for video calls, your browser
+ and any other app that uses a camera. Open Beamcam on the phone and on the
+ computer, click Connect, and pick the "Beamcam" camera.
