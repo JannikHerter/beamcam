@@ -7,7 +7,10 @@ messages do not need a version bump; anything an old peer would misunderstand do
 ## Transport
 
 - The phone listens on TCP **47800** (a random port if that one is taken; the mDNS SRV record and
-  the phone's screen show the real one). One session at a time; a second computer gets `END busy`.
+  the phone's screen show the real one). One session at a time; a second computer gets `END busy`. A
+  computer that connects again with the same `clientId` replaces its own older session, which gets
+  `END replaced` (after a Wi-Fi change the older one is usually dead and would hold the camera until
+  its heartbeat timed out).
 - Discovery: DNS-SD service `_openwebcam._tcp.local`, instance name = phone name,
   TXT `id=<stable phone id>`, `v=1`.
 
@@ -27,7 +30,7 @@ JSON payloads are UTF-8 objects.
 | 0x10 | SET_CAMERA | computer → phone | `{"facing":"front"|"back"}` |
 
 END reasons: `denied`, `timeout` (nobody answered), `busy`, `stopped` (user stopped on the phone),
-`camera` (camera failed), `protocol` (version mismatch).
+`camera` (camera failed), `protocol` (version mismatch), `replaced` (see below).
 
 ## Session
 

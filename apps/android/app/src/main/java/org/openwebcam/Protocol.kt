@@ -31,6 +31,7 @@ object Protocol {
         const val STOPPED = "stopped"
         const val PROTOCOL = "protocol"
         const val CAMERA = "camera"
+        const val REPLACED = "replaced"
     }
 }
 

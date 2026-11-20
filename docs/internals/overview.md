@@ -36,6 +36,15 @@ keyframe is ~40 datagrams and almost never arrives whole. NACK-based resending f
 p99 105 ms), and resending is skipped for gaps longer than ~165 ms, where it only delivers stale
 video. TCP stays as the fallback for networks that drop UDP.
 
+## Reconnecting
+
+Phones often rejoin Wi-Fi with a **new address** (Android's per-connection random MAC): the test
+phone went .143 → .150 in one day. So the window follows the phone by its device id through mDNS
+(`reconnect.py`) instead of retrying the old address, and retries failed connects while
+reconnecting. On the phone, a session for the same `clientId` replaces the older one, because
+after a Wi-Fi change the older one is dead but would hold the camera until its heartbeat timed out.
+A UDP send error is just a lost datagram (`UdpLink.kt`); only the heartbeat or TCP ends a session.
+
 ## Video path
 
 - Camera2 renders straight into the encoder's input surface; no pixel data passes through app code.

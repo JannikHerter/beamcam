@@ -42,12 +42,10 @@ import java.io.BufferedOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
-import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.InetSocketAddress
-import java.net.SocketAddress
 import java.security.SecureRandom
 import java.net.ServerSocket
 import java.net.Socket
@@ -63,6 +61,7 @@ class WebcamService : Service() {
     private var serverSocket: ServerSocket? = null
     private var nsdListener: NsdManager.RegistrationListener? = null
     @Volatile private var activeSession: ClientSession? = null
+    private val sessionLock = Any()
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -136,12 +135,7 @@ class WebcamService : Service() {
             } catch (e: SocketException) {
                 return // server closed
             }
-            if (activeSession != null) {
-                scope.launch { rejectBusy(client) }
-                continue
-            }
             val session = ClientSession(client)
-            activeSession = session
             scope.launch {
                 try {
                     session.run()
@@ -149,94 +143,50 @@ class WebcamService : Service() {
                     Log.i(TAG, "session ended: $e")
                 } finally {
                     session.cleanup()
-                    activeSession = null
-                    if (serverSocket != null) {
+                    val wasActive = synchronized(sessionLock) {
+                        (activeSession === session).also { if (it) activeSession = null }
+                    }
+                    // A replaced session must not overwrite the state of the one that replaced it.
+                    if (wasActive && serverSocket != null) {
                         WebcamState.update { it.copy(status = WebcamStatus.Ready) }
                         notifyStatus(null)
                     }
+                    session.finished.complete(Unit)
                 }
             }
         }
     }
 
-    private fun rejectBusy(client: Socket) = client.use {
-        runCatching {
-            DataOutputStream(it.getOutputStream()).writeJson(Protocol.END, JSONObject().put("reason", Protocol.EndReason.BUSY))
+    /**
+     * Makes [session] the active one, or returns false if another computer is streaming. A computer
+     * that reconnects replaces its own earlier session: after a Wi-Fi drop that one is usually
+     * dead but would otherwise hold the camera until its heartbeat times out.
+     */
+    private suspend fun claim(session: ClientSession, clientId: String): Boolean {
+        val previous = synchronized(sessionLock) {
+            val current = activeSession
+            when {
+                current == null -> null
+                clientId.isNotBlank() && current.clientId == clientId -> current
+                else -> return false
+            }.also { activeSession = session }
         }
+        if (previous != null) {
+            Log.i(TAG, "same computer reconnected, replacing its old session")
+            // Usually its peer is gone; if not (a second app on that computer), END stops it retrying.
+            previous.close(Protocol.EndReason.REPLACED)
+            withTimeoutOrNull(SESSION_HANDOVER_TIMEOUT_MS) { previous.finished.await() }
+        }
+        return true
     }
 
     /** A control message, or (type VIDEO) one access unit with its timestamp and flags. */
     private class Outgoing(val type: Int, val payload: ByteArray, val ptsMicros: Long = 0, val flags: Int = 0)
 
-    /** Video over UDP to the address the computer's first FEEDBACK came from (so firewalls see replies). */
-    private class UdpLink(val socket: DatagramSocket, val token: ByteArray, private val peer: InetAddress) {
-        @Volatile var target: SocketAddress? = null
-            private set
-        val punched = CompletableDeferred<Unit>()
-        @Volatile var lastFeedbackAt = SystemClock.elapsedRealtime()
-            private set
-        private var frameId = 0L
-        private var lastKeyframeRequest = 0L
-        // Recently sent datagrams by frame id, for resending what the computer reports missing.
-        private val history = object : LinkedHashMap<Long, List<ByteArray>>() {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, List<ByteArray>>) = size > RESEND_HISTORY_FRAMES
-        }
-
-        fun send(frame: Outgoing) {
-            val to = target ?: return
-            val id = frameId++
-            val parts = fragmentFrame(id, frame.ptsMicros, frame.flags, frame.payload)
-            synchronized(history) { history[id] = parts }
-            for (part in parts) socket.send(DatagramPacket(part, part.size, to))
-        }
-
-        private fun resend(entries: List<Pair<Long, Int>>) {
-            val to = target ?: return
-            for ((id, index) in entries) {
-                val parts = synchronized(history) { history[id] } ?: continue
-                val wanted = if (index == Udp.NACK_WHOLE_FRAME) parts else listOfNotNull(parts.getOrNull(index))
-                for (part in wanted) socket.send(DatagramPacket(part, part.size, to))
-            }
-        }
-
-        fun receiveLoop(onKeyframeRequest: () -> Unit) {
-            val buffer = ByteArray(2048)
-            val packet = DatagramPacket(buffer, buffer.size)
-            try {
-                while (true) {
-                    packet.setLength(buffer.size)
-                    socket.receive(packet)
-                    if (packet.address != peer) continue
-                    val nack = parseNack(buffer, packet.length)
-                    if (nack != null) {
-                        if (nack.first.contentEquals(token)) resend(nack.second)
-                        continue
-                    }
-                    val feedback = parseFeedback(buffer, packet.length) ?: continue
-                    if (!feedback.token.contentEquals(token)) continue
-                    val now = SystemClock.elapsedRealtime()
-                    lastFeedbackAt = now
-                    if (target == null) {
-                        target = packet.socketAddress
-                        punched.complete(Unit)
-                    }
-                    // A lost burst produces several requests; one keyframe answers all of them.
-                    if (feedback.wantsKeyframe && now - lastKeyframeRequest > KEYFRAME_REQUEST_INTERVAL_MS) {
-                        lastKeyframeRequest = now
-                        onKeyframeRequest()
-                    }
-                }
-            } catch (e: IOException) {
-                // Socket closed.
-            }
-        }
-
-        fun close() = socket.close()
-    }
-
     private inner class ClientSession(private val socket: Socket) {
         private val outgoing = Channel<Outgoing>(capacity = OUTGOING_CAPACITY)
-        private var streamer: CameraStreamer? = null
+        // Also read from the UDP receive thread (keyframe requests).
+        @Volatile private var streamer: CameraStreamer? = null
         private var orientationListener: OrientationEventListener? = null
         private var wakeLock: PowerManager.WakeLock? = null
         private var wifiLock: WifiManager.WifiLock? = null
@@ -247,8 +197,13 @@ class WebcamService : Service() {
         @Volatile private var quadrant = 0
         @Volatile private var lastRotation = -1
         @Volatile private var endReason: String? = null
+        @Volatile private var closed = false
         @Volatile private var udpLink: UdpLink? = null
         private var udpWatchdog: Job? = null
+        @Volatile var clientId: String? = null
+            private set
+        /** Completed once the camera and sockets are released. */
+        val finished = CompletableDeferred<Unit>()
 
         suspend fun run() = coroutineScope {
             socket.tcpNoDelay = true
@@ -271,7 +226,13 @@ class WebcamService : Service() {
                 val transports = json.optJSONArray("transports")
                 val wantsUdp = transports != null && (0 until transports.length()).any { transports.optString(it) == "udp" }
                 val clientId = json.optString("clientId")
+                this@ClientSession.clientId = clientId
                 val clientName = json.optString("clientName").ifBlank { getString(R.string.unknown_computer) }.take(64)
+                if (!claim(this@ClientSession, clientId)) {
+                    output.writeJson(Protocol.END, JSONObject().put("reason", Protocol.EndReason.BUSY))
+                    output.flush()
+                    return@coroutineScope
+                }
                 socket.soTimeout = 0
                 launch { readLoop(input) }
 
@@ -286,13 +247,13 @@ class WebcamService : Service() {
                     cancelApprovalNotification()
                     WebcamState.respondToApproval(false)
                     if (allowed != true) {
-                        endReason = if (allowed == null) Protocol.EndReason.TIMEOUT else Protocol.EndReason.DENIED
+                        if (!closed) endReason = if (allowed == null) Protocol.EndReason.TIMEOUT else Protocol.EndReason.DENIED
                         sendEnd(output)
                         return@coroutineScope
                     }
                     if (clientId.isNotBlank()) settings.trust(clientId)
                 }
-                if (endReason != null) return@coroutineScope
+                if (closed) return@coroutineScope
 
                 val offer = if (wantsUdp && socket.inetAddress is Inet4Address) openUdp(socket.inetAddress) else null
                 val accept = JSONObject()
@@ -339,7 +300,10 @@ class WebcamService : Service() {
                 sendEnd(output)
             } finally {
                 udpWatchdog?.cancel()
-                udpLink?.close()
+                udpLink?.let {
+                    if (it.failedSends > 0) Log.i(TAG, "${it.failedSends} UDP datagrams could not be sent")
+                    it.close()
+                }
                 runCatching { socket.close() }
             }
         }
@@ -348,7 +312,7 @@ class WebcamService : Service() {
             val udp = udpLink
             when {
                 message.type != Protocol.VIDEO -> output.writeMessage(message.type, message.payload)
-                udp != null -> udp.send(message)
+                udp != null -> udp.send(message.ptsMicros, message.flags, message.payload)
                 else -> output.writeMessage(Protocol.VIDEO, encodeVideoPayload(message.ptsMicros, message.flags, message.payload))
             }
         }
@@ -460,7 +424,9 @@ class WebcamService : Service() {
             outgoing.trySend(Outgoing(Protocol.CAMERA, state.toString().toByteArray()))
         }
 
-        fun close(reason: String) {
+        /** Ends the session; [reason] is sent as END, or nothing when null. */
+        fun close(reason: String?) {
+            closed = true
             endReason = reason
             approval?.complete(false)
             outgoing.close()
@@ -609,8 +575,7 @@ class WebcamService : Service() {
         private const val UDP_SEND_BUFFER_BYTES = 512 * 1024
         private const val UDP_PUNCH_TIMEOUT_MS = 1000L
         private const val UDP_LIVENESS_TIMEOUT_MS = 8000L
-        private const val KEYFRAME_REQUEST_INTERVAL_MS = 200L
-        private const val RESEND_HISTORY_FRAMES = 90
+        private const val SESSION_HANDOVER_TIMEOUT_MS = 3000L
 
         val FORMAT = StreamFormat(width = 1280, height = 720, fps = 30, bitrate = 4_000_000)
 

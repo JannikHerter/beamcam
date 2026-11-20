@@ -17,7 +17,7 @@ are on the same Wi-Fi. VPNs on the computer can also get in the way; try turning
 
 ## My video app doesn't list “Open Webcam”
 
-- Start streaming first, then (re)open the camera list in the app. Browsers and Zoom only list the
+- Start streaming first, then (re)open the camera list in the app. Many apps only list the
   camera while the phone is streaming.
 - **Firefox:** if the camera is missing (seen on some Fedora builds), open `about:config` and set
   `media.webrtc.camera.allow-pipewire` to `false`, then restart Firefox.

@@ -23,8 +23,8 @@
 1. Your phone appears on the computer. Click **Connect**.
 2. The phone asks **Allow “your computer” to use your camera?** Tap **Allow**. You're only asked
    once per computer.
-3. You see the picture on your computer. In your video app (Zoom, Google Meet in the browser,
-   Discord, OBS, …) choose the camera **Open Webcam**.
+3. You see the picture on your computer. In your video call, browser or any other app that uses
+   a camera, choose the camera **Open Webcam**.
 
 Next time, opening both apps is enough: the computer reconnects to your phone by itself.
 

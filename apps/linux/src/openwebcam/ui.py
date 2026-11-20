@@ -13,16 +13,15 @@ gi.require_version("Gst", "1.0")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
 from openwebcam import APP_ID, __version__, virtualcam  # noqa: E402
-from openwebcam.client import CLOSED, CONNECTION_LOST, StreamInfo, end_message, parse_address  # noqa: E402
+from openwebcam.client import CLOSED, StreamInfo, end_message, parse_address  # noqa: E402
 from openwebcam.config import Config, computer_name  # noqa: E402
 from openwebcam.controller import Controller  # noqa: E402
 from openwebcam.mdns import Browser, Phone  # noqa: E402
 from openwebcam.pipeline import Pipeline, missing_elements  # noqa: E402
+from openwebcam.reconnect import Reconnector, Target  # noqa: E402
 
 log = logging.getLogger(__name__)
 
-RECONNECT_ATTEMPTS = 10
-RECONNECT_DELAY_MS = 3000
 
 
 class Window(Adw.ApplicationWindow):
@@ -32,9 +31,8 @@ class Window(Adw.ApplicationWindow):
         self.config = Config.load()
         self.phones: list[Phone] = []
         self.controller: Controller | None = None
-        self.target: tuple[str, int, str] | None = None  # host, port, display name
         self.auto_connect_allowed = True
-        self.reconnects_left = 0
+        self.reconnector = Reconnector()
         self.reconnect_source = 0
 
         self.toasts = Adw.ToastOverlay()
@@ -239,6 +237,10 @@ class Window(Adw.ApplicationWindow):
     def _on_phones(self, phones: list[Phone]) -> bool:
         self.phones = phones
         self._render_phones()
+        if self.reconnector.phones(phones) and self.reconnect_source:
+            # The phone is back at a new address: no need to wait for the timer.
+            GLib.source_remove(self.reconnect_source)
+            self._reconnect()
         if self.controller is None and self.auto_connect_allowed and self.config.last_phone_id:
             remembered = next((p for p in phones if p.id == self.config.last_phone_id), None)
             if remembered:
@@ -303,8 +305,7 @@ class Window(Adw.ApplicationWindow):
             return
         self.auto_connect_allowed = False
         if not reconnecting:
-            self.reconnects_left = RECONNECT_ATTEMPTS
-        self.target = (host, port, name)
+            self.reconnector.connecting(Target(host, port, name, phone_id))
         self.refresh_camera_state()
         self.connecting_status.set_title(f"Reconnecting to {name}…" if reconnecting else f"Connecting to {name}…")
         self.connecting_status.set_description(None)
@@ -316,7 +317,7 @@ class Window(Adw.ApplicationWindow):
         self.controller.start()
 
     def disconnect(self) -> None:
-        self.reconnects_left = 0
+        self.reconnector.cancel()
         if self.reconnect_source:
             GLib.source_remove(self.reconnect_source)
             self.reconnect_source = 0
@@ -341,14 +342,14 @@ class Window(Adw.ApplicationWindow):
 
     def on_streaming(self, info: StreamInfo, pipeline: Pipeline) -> None:
         self.facing = info.facing
-        self.reconnects_left = RECONNECT_ATTEMPTS
+        self.reconnector.streaming(info.device_id or None)
         if info.device_id:
             self.config.last_phone_id = info.device_id
             self.config.save()
         self.picture.set_paintable(pipeline.paintable)
         self.streaming_title.set_label(f"Streaming from {info.device_name}")
         if self.camera:
-            self.streaming_hint.set_label(f"Choose “{self.camera.label}” as the camera in Zoom, your browser or OBS.")
+            self.streaming_hint.set_label(f"Choose “{self.camera.label}” as the camera in your video call, browser or any other app.")
         else:
             self.streaming_hint.set_label("Preview only: set up the virtual camera to use your phone in other apps.")
         self.stack.set_visible_child_name("streaming")
@@ -356,13 +357,14 @@ class Window(Adw.ApplicationWindow):
     def on_ended(self, reason: str) -> None:
         self.controller = None
         self.picture.set_paintable(None)
-        if reason == CONNECTION_LOST and self.reconnects_left > 0 and self.target:
-            self.reconnects_left -= 1
-            host, port, name = self.target
-            self.connecting_status.set_title(f"Reconnecting to {name}…")
+        retry = self.reconnector.ended(reason)
+        if retry is not None:
+            target, delay = retry
+            self.connecting_status.set_title(f"Reconnecting to {target.name}…")
             self.connecting_status.set_description("The connection dropped. Trying again…")
             self.stack.set_visible_child_name("connecting")
-            self.reconnect_source = GLib.timeout_add(RECONNECT_DELAY_MS, self._reconnect)
+            self.browser.refresh()  # find the phone again in case its address changed
+            self.reconnect_source = GLib.timeout_add(int(delay * 1000), self._reconnect)
             return
         self._show_phones()
         if reason != CLOSED:
@@ -370,9 +372,9 @@ class Window(Adw.ApplicationWindow):
 
     def _reconnect(self) -> bool:
         self.reconnect_source = 0
-        if self.target:
-            host, port, name = self.target
-            self.connect_to(host, port, name, None, reconnecting=True)
+        target = self.reconnector.attempting()
+        if target is not None:
+            self.connect_to(target.host, target.port, target.name, target.phone_id, reconnecting=True)
         return False
 
     def _show_phones(self) -> None:

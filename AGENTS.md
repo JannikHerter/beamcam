@@ -40,6 +40,7 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
 
 - `apps/android/app/src/main/java/org/openwebcam/`
   - `WebcamService.kt`: foreground service. Server socket, mDNS advertisement, sessions, approval.
+  - `UdpLink.kt`: UDP video, resends and keyframe requests for one session. Send errors never end it.
   - `CameraStreamer.kt`: Camera2 into MediaCodec's input surface. No pixels pass through app code.
   - `Protocol.kt`, `Orientation.kt`: wire format and rotation math (unit tested).
   - `MainActivity.kt`: Compose UI. It only reads `WebcamState` and sends intents to the service.
@@ -47,7 +48,9 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
   - `protocol.py` mirrors `Protocol.kt`. `client.py` is one session (TCP control, UDP video).
     `reassembly.py` rebuilds frames from UDP datagrams and decides what to NACK. `mdns.py` finds phones.
   - `pipeline.py`: GStreamer decode, rotate, fixed-size output, v4l2sink. `controller.py` joins session and pipeline.
-  - `ui.py` (GTK) and `cli.py` (scripts and tests) are thin layers over the controller.
+  - `reconnect.py` decides whether and where to reconnect (follows the phone's id through mDNS).
+  - `ui.py` (GTK) and `cli.py` (scripts and tests) are thin layers over the controller. Only the
+    window reconnects; the CLI exits so scripts see the failure.
   - `virtualcam.py` and `data/setup-virtual-camera` find and create the v4l2loopback device.
 - `docs/internals/protocol.md` is the contract between the two apps.
 
@@ -86,7 +89,8 @@ Before calling work done, say which of these applied:
   GStreamer). On Android, prefer the platform over libraries.
 - Default to no comment. Write one only for a constraint, an external quirk or an invariant the code can't show.
 - User-facing text is short, friendly and tells people what to do. Use “Allow”, not “Authorize”;
-  “Wi-Fi”, not “LAN”.
+  “Wi-Fi”, not “LAN”. Don't name other products (say “your video call”, not a brand); code
+  comments and internal docs may, where they record a real compatibility fact.
 - If a rule here fights the task in front of you, say so and get a human sign-off before breaking it.
 
 ## Plans and work artifacts

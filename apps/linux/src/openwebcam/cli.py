@@ -92,13 +92,18 @@ def _stream(args: argparse.Namespace) -> int:
     loop = GLib.MainLoop()
     result = {"exit": 0, "snapshot_taken": False}
 
+    def print_transport() -> bool:
+        # The transport is known once the first UDP datagram arrived (or didn't).
+        print(f"Video transport: {controller.session.transport}", flush=True)
+        return False
+
     class Events:
         def on_pending(self) -> None:
             print("Waiting for you to tap Allow on the phone…", flush=True)
 
         def on_streaming(self, info, pipeline) -> None:
             print(f"Streaming from {info.device_name} ({info.width}x{info.height}) to {device or 'nowhere'}", flush=True)
-            GLib.timeout_add(1500, lambda: print(f"Video transport: {controller.session.transport}", flush=True) and False)
+            GLib.timeout_add(1500, print_transport)
             if args.camera:
                 controller.set_camera(args.camera)
 

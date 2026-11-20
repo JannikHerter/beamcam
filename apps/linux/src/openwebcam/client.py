@@ -59,6 +59,7 @@ END_MESSAGES = {
     "busy": "The phone is already streaming to another computer.",
     "stopped": "Streaming was stopped on the phone.",
     "camera": "The phone’s camera stopped working.",
+    "replaced": "Another Open Webcam on this computer took over the phone.",
     "protocol": "The phone app and this app don’t fit together. Update both to the latest version.",
     CONNECT_FAILED: "Couldn’t reach the phone. Is Open Webcam open on it, and on the same Wi-Fi?",
     CONNECTION_LOST: "Lost the connection to the phone.",

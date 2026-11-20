@@ -31,8 +31,6 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.outlined.CameraFront
-import androidx.compose.material.icons.outlined.CameraRear
 import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material.icons.outlined.VideocamOff
 import androidx.compose.material.icons.outlined.WifiOff
@@ -72,10 +70,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -223,11 +224,20 @@ private fun OverflowMenu(onForget: () -> Unit, onTurnOff: () -> Unit, canTurnOff
 
 @Composable
 private fun Hero(icon: ImageVector, title: String, tint: Color = MaterialTheme.colorScheme.primary) {
-    Spacer(Modifier.height(32.dp))
-    Icon(icon, contentDescription = null, modifier = Modifier.size(96.dp), tint = tint)
-    Spacer(Modifier.height(24.dp))
+    // A phone mounted sideways as a webcam has little height; keep the controls on screen.
+    if (!isShortScreen()) {
+        Spacer(Modifier.height(32.dp))
+        Icon(icon, contentDescription = null, modifier = Modifier.size(96.dp), tint = tint)
+        Spacer(Modifier.height(24.dp))
+    }
     Text(title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
     Spacer(Modifier.height(12.dp))
+}
+
+@Composable
+private fun isShortScreen(): Boolean {
+    val height = LocalWindowInfo.current.containerSize.height
+    return with(LocalDensity.current) { height.toDp() } < 480.dp
 }
 
 @Composable
@@ -296,23 +306,26 @@ private fun StreamingScreen(computerName: String, facing: Facing, onFacing: (Fac
     }
     Hero(Icons.Outlined.Videocam, stringResource(R.string.streaming_title, computerName))
     Body(stringResource(R.string.streaming_text))
-    Spacer(Modifier.height(32.dp))
+    val gap = if (isShortScreen()) 16.dp else 32.dp
+    Spacer(Modifier.height(gap))
     if (options.size > 1) {
-        SingleChoiceSegmentedButtonRow {
+        SingleChoiceSegmentedButtonRow(Modifier.widthIn(max = 320.dp).fillMaxWidth()) {
             options.forEachIndexed { index, option ->
                 SegmentedButton(
                     selected = facing == option,
                     onClick = { onFacing(option) },
                     shape = SegmentedButtonDefaults.itemShape(index, options.size),
-                    icon = {
-                        Icon(if (option == Facing.FRONT) Icons.Outlined.CameraFront else Icons.Outlined.CameraRear, contentDescription = null)
-                    },
+                    modifier = Modifier.weight(1f),
                 ) {
-                    Text(stringResource(if (option == Facing.FRONT) R.string.camera_front else R.string.camera_back))
+                    Text(
+                        stringResource(if (option == Facing.FRONT) R.string.camera_front else R.string.camera_back),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(gap / 2 + 8.dp))
     }
     OutlinedButton(onClick = onStop) { Text(stringResource(R.string.action_stop_streaming)) }
 }
