@@ -9,7 +9,7 @@ misunderstand does. Version 2 added TLS and pairing; a version 1 peer cannot tal
 
 - The phone listens on TCP **47800** (a random port if that one is taken; the mDNS SRV record and
   the phone's screen show the real one). The connection is **TLS 1.2+** from the first byte.
-- Discovery: DNS-SD service `_openwebcam._tcp.local`, instance name = phone name,
+- Discovery: DNS-SD service `_beamcam._tcp.local`, instance name = phone name,
   TXT `id=<stable phone id>`, `v=2`. Nothing in mDNS is trusted; it only says where to connect.
 - One session at a time; a second computer gets `END busy`. A computer that reconnects with the
   same pairing replaces its own older session, which gets `END replaced` (after a Wi-Fi change the

@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "org.openwebcam"
+    namespace = "org.beamcam"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "org.openwebcam"
+        applicationId = "org.beamcam"
         minSdk = 28
         targetSdk = 36
         versionCode = 1

@@ -1,0 +1,66 @@
+#!/bin/sh
+# Creates (or with --remove, deletes) the "Beamcam" v4l2loopback camera and makes it
+# come back after a reboot. Runs as root; the app starts it through pkexec.
+set -eu
+
+LABEL="Beamcam"
+OPTIONS="devices=1 exclusive_caps=1"
+MODPROBE_CONF=/etc/modprobe.d/beamcam.conf
+LOAD_CONF=/etc/modules-load.d/beamcam.conf
+
+has_device() {
+    for name in /sys/devices/virtual/video4linux/*/name; do
+        [ -e "$name" ] && [ "$(cat "$name")" = "$LABEL" ] && return 0
+    done
+    return 1
+}
+
+load_module() {
+    # The quotes keep the space in the label; modprobe passes them on to the kernel.
+    modprobe v4l2loopback $OPTIONS card_label="\"$LABEL\""
+}
+
+if [ "${1:-}" = "--remove" ]; then
+    rm -f "$MODPROBE_CONF" "$LOAD_CONF"
+    if has_device; then
+        modprobe -r v4l2loopback || {
+            echo "The virtual camera is still in use. Close apps using it and try again." >&2
+            exit 1
+        }
+    fi
+    exit 0
+fi
+
+if ! modinfo v4l2loopback >/dev/null 2>&1; then
+    echo "v4l2loopback is not installed." >&2
+    exit 3
+fi
+
+if ! has_device; then
+    if [ ! -d /sys/module/v4l2loopback ]; then
+        load_module
+    elif command -v v4l2loopback-ctl >/dev/null 2>&1 && v4l2loopback-ctl add -n "$LABEL" -x 1 >/dev/null 2>&1; then
+        : # added next to devices another app (e.g. OBS) created
+    else
+        modprobe -r v4l2loopback && load_module || {
+            echo "v4l2loopback is already used by another app." >&2
+            exit 1
+        }
+    fi
+fi
+
+# Only persist when nobody else configured the module, so we never fight OBS or a user's own setup.
+# Match the exact module name: DroidCam's "v4l2loopback_dc" is a different module.
+if ! grep -qrsE '^[[:space:]]*options[[:space:]]+v4l2loopback([[:space:]]|$)' /etc/modprobe.d/ || [ -e "$MODPROBE_CONF" ]; then
+    printf 'options v4l2loopback %s card_label="%s"\n' "$OPTIONS" "$LABEL" > "$MODPROBE_CONF"
+fi
+if ! grep -qrsxE '[[:space:]]*v4l2loopback[[:space:]]*' /etc/modules-load.d/ || [ -e "$LOAD_CONF" ]; then
+    echo v4l2loopback > "$LOAD_CONF"
+fi
+
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+    has_device && exit 0
+    sleep 0.2
+done
+echo "The virtual camera did not appear." >&2
+exit 1

@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "open-webcam"
+rootProject.name = "beamcam"
 include(":app")

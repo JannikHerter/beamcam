@@ -1,13 +1,13 @@
 <img src="assets/icon.svg" width="64" height="64" alt="">
 
-# Open Webcam
+# Beamcam
 
 Use your Android phone as a wireless webcam on Linux, for video calls, your browser and any other app that uses a camera.
 
-1. Install **Open Webcam** on your phone and on your computer.
+1. Install **Beamcam** on your phone and on your computer.
 2. Open both. Your phone shows up on the computer; click **Connect**.
 3. Tap **Allow** on the phone the first time.
-4. In your video call, browser or any other app, pick the camera **Open Webcam**.
+4. In your video call, browser or any other app, pick the camera **Beamcam**.
 
 The video goes straight from your phone to your computer over your Wi-Fi. Nothing is uploaded to the internet.
 

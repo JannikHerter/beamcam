@@ -9,7 +9,7 @@ gi.require_version("GstApp", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf, Gst  # noqa: E402
 
-from openwebcam.pipeline import Pipeline  # noqa: E402
+from beamcam.pipeline import Pipeline  # noqa: E402
 
 Gst.init(None)
 

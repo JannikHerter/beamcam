@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from openwebcam import virtualcam
+from beamcam import virtualcam
 
 
 class FindCamerasTest(unittest.TestCase):

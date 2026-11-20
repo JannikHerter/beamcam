@@ -14,14 +14,14 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID
 
-from openwebcam import protocol, secure
-from openwebcam.client import CONNECT_FAILED, FORGOTTEN, UNKNOWN_PHONE, Session, parse_address
+from beamcam import protocol, secure
+from beamcam.client import CONNECT_FAILED, FORGOTTEN, UNKNOWN_PHONE, Session, parse_address
 
 
 def _make_certificate(directory):
     """A self-signed EC certificate like the phone's keystore one."""
     key = ec.generate_private_key(ec.SECP256R1())
-    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Open Webcam")])
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Beamcam")])
     now = datetime.datetime.now(datetime.timezone.utc)
     cert = (
         x509.CertificateBuilder()

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Beamcam
+Comment=Use your Android phone as a webcam
+Exec=beamcam
+Icon=org.beamcam.Beamcam
+Terminal=false
+Categories=AudioVideo;Video;
+Keywords=camera;webcam;phone;android;v4l2loopback;
+StartupNotify=true

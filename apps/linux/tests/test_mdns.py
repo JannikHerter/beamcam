@@ -2,7 +2,7 @@ import socket
 import struct
 import unittest
 
-from openwebcam import mdns
+from beamcam import mdns
 
 SERVICE = mdns.SERVICE_NAME
 INSTANCE = ("Pixel 9",) + SERVICE
@@ -42,7 +42,7 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(records[3].data, "192.168.1.50")
 
     def test_compressed_names(self):
-        # PTR rdata points back at the question-less answer's owner name ("_openwebcam._tcp.local" at offset 12).
+        # PTR rdata points back at the question-less answer's owner name ("_beamcam._tcp.local" at offset 12).
         owner = mdns._encode_name(SERVICE)
         rdata = bytes([len(b"Cam")]) + b"Cam" + struct.pack(">H", 0xC000 | 12)
         packet = struct.pack(">HHHHHH", 0, 0x8400, 0, 1, 0, 0) + owner + struct.pack(">HHIH", 12, 1, 120, len(rdata)) + rdata

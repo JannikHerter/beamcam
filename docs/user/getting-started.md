@@ -7,7 +7,7 @@
 
 ## On the computer
 
-1. Install and open **Open Webcam**.
+1. Install and open **Beamcam**.
 2. The first time, a bar at the top says **Set up the virtual camera**. Click **Set Up** and enter
    your password. This creates the camera other apps will see. You only do this once.
    - If it says the driver isn't installed, click **How to Install** and run the command it shows,
@@ -15,7 +15,7 @@
 
 ## On the phone
 
-1. Open **Open Webcam** and tap **Allow camera**.
+1. Open **Beamcam** and tap **Allow camera**.
 2. The phone now says **Ready** and waits for your computer.
 
 ## Connect
@@ -25,7 +25,7 @@
    once per computer. The phone and the computer show the same 6-digit code; if they ever differ,
    tap **Don't allow**: something else is pretending to be your phone or computer.
 3. You see the picture on your computer. In your video call, browser or any other app that uses
-   a camera, choose the camera **Open Webcam**.
+   a camera, choose the camera **Beamcam**.
 
 Next time, opening both apps is enough: the computer connects to your phone by itself. It only does
 that with a phone you paired this way; other phones just appear in the list.

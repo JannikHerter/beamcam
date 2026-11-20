@@ -1,7 +1,7 @@
 import io
 import unittest
 
-from openwebcam import protocol, secure
+from beamcam import protocol, secure
 
 
 class ProtocolTest(unittest.TestCase):

@@ -1,11 +1,11 @@
-# Open Webcam docs
+# Beamcam docs
 
-## Using Open Webcam
+## Using Beamcam
 
 - [Getting started](./user/getting-started.md)
 - [Troubleshooting](./user/troubleshooting.md)
 
-## Working on Open Webcam
+## Working on Beamcam
 
 Start with the [development runbook](./operations/development.md) and the
 [contribution policy](../CONTRIBUTING.md). Internal notes record decisions and traps the code

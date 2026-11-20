@@ -17,7 +17,7 @@
 - Video over UDP is encrypted and authenticated with AES-256-GCM, with a fresh key per session.
 - “Forget allowed computers” on the phone and “Forget Paired Phones” on the computer revoke pairings.
 - The phone shows a notification for as long as it streams, and Android shows its camera indicator.
-- The computer keeps its pairing secrets in `~/.config/open-webcam/config.json`, readable only by
+- The computer keeps its pairing secrets in `~/.config/beamcam/config.json`, readable only by
   its user. Anyone who can read that file can connect to the paired phones.
 
 ## Known limitations
@@ -28,7 +28,7 @@
   (and therefore replayed) video datagrams; their frames are discarded as old, so this only costs
   bandwidth.
 - The virtual camera helper runs as root via `pkexec` (it loads v4l2loopback and writes
-  `/etc/modprobe.d/open-webcam.conf` and `/etc/modules-load.d/open-webcam.conf`).
+  `/etc/modprobe.d/beamcam.conf` and `/etc/modules-load.d/beamcam.conf`).
 
 ## Reporting
 

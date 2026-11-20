@@ -14,7 +14,7 @@ one connection at a time and asks the user before the first one from each comput
 
 ## Discovery
 
-The phone advertises `_openwebcam._tcp` with Android's `NsdManager` (TXT `id` is a stable random
+The phone advertises `_beamcam._tcp` with Android's `NsdManager` (TXT `id` is a stable random
 phone id, `v` the protocol version). The computer does **not** use Avahi: it is disabled by
 default on Arch and Manjaro, and the D-Bus API adds a dependency. `mdns.py` binds UDP 5353 with
 `SO_REUSEPORT` (so it coexists with Avahi when present), joins the group on every IPv4 interface
@@ -73,8 +73,8 @@ A UDP send error is just a lost datagram (`UdpLink.kt`); only the heartbeat or T
 
 v4l2loopback, because PipeWire cameras are not yet supported by every browser and most
 non-browser apps. The device is created with `exclusive_caps=1`; without it Chrome does not list
-it. Our helper (`apps/linux/src/openwebcam/data/setup-virtual-camera`) runs via `pkexec`, finds or
-creates a device labelled "Open Webcam", and persists the options only when no one else has
+it. Our helper (`apps/linux/src/beamcam/data/setup-virtual-camera`) runs via `pkexec`, finds or
+creates a device labelled "Beamcam", and persists the options only when no one else has
 configured `v4l2loopback`, so it never fights OBS or a manual setup. Watch out for DroidCam's
 `v4l2loopback_dc`, a different module with a similar name.
 

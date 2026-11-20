@@ -1,8 +1,8 @@
 import unittest
 
-from openwebcam.client import CLOSED, CONNECT_FAILED, CONNECTION_LOST, FORGOTTEN, UNKNOWN_PHONE
-from openwebcam.mdns import Phone
-from openwebcam.reconnect import DELAY, Reconnector, Target
+from beamcam.client import CLOSED, CONNECT_FAILED, CONNECTION_LOST, FORGOTTEN, UNKNOWN_PHONE
+from beamcam.mdns import Phone
+from beamcam.reconnect import DELAY, Reconnector, Target
 
 PHONE = Target("192.168.2.147", 47800, "Pixel", "phone-1")
 

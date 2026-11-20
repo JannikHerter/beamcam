@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "open-webcam"
+name = "beamcam"
 version = "0.1.0"
 description = "Use your Android phone as a webcam on Linux"
 readme = "README.md"
@@ -12,13 +12,13 @@ requires-python = ">=3.10"
 dependencies = ["cryptography>=41"]
 
 [project.scripts]
-open-webcam = "openwebcam.cli:main"
+beamcam = "beamcam.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-openwebcam = ["data/setup-virtual-camera"]
+beamcam = ["data/setup-virtual-camera"]
 
 [tool.ruff]
 line-length = 120

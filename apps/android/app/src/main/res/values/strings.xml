@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Open Webcam</string>
+    <string name="app_name">Beamcam</string>
     <string name="unknown_computer">A computer</string>
 
     <string name="permission_title">Use your phone as a webcam</string>
-    <string name="permission_text">Open Webcam needs access to your camera so it can send the picture to your computer. Nothing is recorded or uploaded to the internet.</string>
+    <string name="permission_text">Beamcam needs access to your camera so it can send the picture to your computer. Nothing is recorded or uploaded to the internet.</string>
     <string name="permission_button">Allow camera</string>
     <string name="permission_settings_button">Open settings</string>
     <string name="permission_denied">Camera access was turned off. Turn it on in Settings → Permissions → Camera.</string>
 
     <string name="ready_title">Ready</string>
-    <string name="ready_text">On your computer, open Open Webcam and pick “%1$s”.</string>
+    <string name="ready_text">On your computer, open Beamcam and pick “%1$s”.</string>
     <string name="ready_same_wifi">Your phone and computer must be on the same Wi-Fi.</string>
     <string name="ready_manual">Not showing up? Type this on your computer:</string>
     <string name="no_network">This phone isn’t connected to Wi-Fi. Connect it to the same Wi-Fi as your computer.</string>
 
     <string name="streaming_title">Streaming to %1$s</string>
-    <string name="streaming_text">On your computer, pick the camera “Open Webcam” in your video call, browser or any other app. You can lock your phone; streaming keeps going.</string>
+    <string name="streaming_text">On your computer, pick the camera “Beamcam” in your video call, browser or any other app. You can lock your phone; streaming keeps going.</string>
     <string name="camera_front">Front</string>
     <string name="camera_back">Back</string>
     <string name="action_stop_streaming">Stop streaming</string>
 
-    <string name="off_title">Open Webcam is off</string>
+    <string name="off_title">Beamcam is off</string>
     <string name="off_text">Your computer can’t find this phone right now.</string>
     <string name="action_turn_on">Turn on</string>
     <string name="action_turn_off">Turn off</string>
@@ -39,7 +39,7 @@
     <string name="channel_status">Webcam status</string>
     <string name="channel_requests">Connection requests</string>
     <string name="notification_ready_title">Ready for your computer</string>
-    <string name="notification_ready_text">Open Open Webcam on your computer to connect.</string>
+    <string name="notification_ready_text">Open Beamcam on your computer to connect.</string>
     <string name="notification_streaming_title">Streaming to %1$s</string>
     <string name="notification_streaming_text">Your camera is being used as a webcam.</string>
 </resources>

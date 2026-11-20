@@ -4,7 +4,7 @@
 
 - Both must be on the **same Wi-Fi**. Guest networks and some office or school networks block
   devices from seeing each other; use your home Wi-Fi or your phone's hotspot.
-- Keep the Open Webcam app open on the phone until it connects.
+- Keep the Beamcam app open on the phone until it connects.
 - Use **Connect by Address…** on the computer and type the address shown on the phone
   (for example `192.168.1.23`).
 - A firewall can block discovery. Allow mDNS (UDP port 5353). On Fedora:
@@ -15,7 +15,7 @@
 The computer found no phone at that address. Check the address on the phone screen and that both
 are on the same Wi-Fi. VPNs on the computer can also get in the way; try turning yours off.
 
-## My video app doesn't list “Open Webcam”
+## My video app doesn't list “Beamcam”
 
 - Start streaming first, then (re)open the camera list in the app. Many apps only list the
   camera while the phone is streaming.
@@ -32,5 +32,5 @@ picture still follows how you hold it.
 
 - Move closer to the Wi-Fi router, or use the phone's hotspot. 5 GHz Wi-Fi works best.
 - If it freezes for several seconds and the computer says it is reconnecting, the phone briefly
-  left the Wi-Fi. Turn off battery saving for Open Webcam on the phone
-  (Settings → Apps → Open Webcam → Battery → Unrestricted).
+  left the Wi-Fi. Turn off battery saving for Beamcam on the phone
+  (Settings → Apps → Beamcam → Battery → Unrestricted).

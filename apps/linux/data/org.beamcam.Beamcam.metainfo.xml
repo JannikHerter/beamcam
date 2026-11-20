@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.beamcam.Beamcam</id>
+  <name>Beamcam</name>
+  <summary>Use your Android phone as a webcam</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <description>
+    <p>Turn your Android phone into a wireless webcam for video calls, your browser and any other app that uses a camera.
+    Open the app on your phone and on your computer, click Connect, and pick the “Beamcam” camera.</p>
+  </description>
+  <launchable type="desktop-id">org.beamcam.Beamcam.desktop</launchable>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.1.0" date="2026-11-19" />
+  </releases>
+</component>

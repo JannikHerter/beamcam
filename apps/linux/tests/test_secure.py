@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from unittest import mock
 
-from openwebcam import secure
-from openwebcam.config import Config
+from beamcam import secure
+from beamcam.config import Config
 
 KEY = bytes(range(32))
 
@@ -13,8 +13,8 @@ KEY = bytes(range(32))
 class SealerTest(unittest.TestCase):
     def test_phone_vector_matches_android(self):
         # Same vector as SecureTest.kt: key 00..1f, phone -> computer, counter 5.
-        sealed = bytes.fromhex("0000000000000005d1f6087b4ed1f00c8011e492984428d3374b97cfe2f157523c500e")
-        self.assertEqual(secure.Sealer.for_computer(KEY).open(sealed), b"open webcam")
+        sealed = bytes.fromhex("0000000000000005dce30c780dc7f8121966254e4c0e7dbe5911f64374d135")
+        self.assertEqual(secure.Sealer.for_computer(KEY).open(sealed), b"beamcam")
 
     def test_round_trip_and_rejections(self):
         computer = secure.Sealer.for_computer(KEY)
@@ -45,7 +45,7 @@ class PairingStoreTest(unittest.TestCase):
     def test_pairings_persist_privately(self):
         config = Config.load()
         config.pair("fp1", KEY, "phone-1", "Pixel")
-        path = os.path.join(self.dir.name, "open-webcam", "config.json")
+        path = os.path.join(self.dir.name, "beamcam", "config.json")
         self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
         again = Config.load()
         self.assertEqual(again.secret_for("fp1"), KEY)

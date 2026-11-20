@@ -1,7 +1,7 @@
 import unittest
 
-from openwebcam import protocol
-from openwebcam.reassembly import LOSS_TIMEOUT, MAX_RECOVER_FRAMES, NACK_RETRY, Reassembler
+from beamcam import protocol
+from beamcam.reassembly import LOSS_TIMEOUT, MAX_RECOVER_FRAMES, NACK_RETRY, Reassembler
 
 KEY = protocol.FLAG_KEYFRAME
 

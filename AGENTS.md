@@ -1,6 +1,6 @@
-# Open Webcam
+# Beamcam
 
-Open Webcam turns an Android phone into a wireless webcam for Linux. The phone app streams
+Beamcam turns an Android phone into a wireless webcam for Linux. The phone app streams
 hardware-encoded H.264 over the local network; the Linux app decodes it and writes it to a
 v4l2loopback device that every video app sees as a normal camera.
 
@@ -39,14 +39,14 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
 
 ## Where code lives
 
-- `apps/android/app/src/main/java/org/openwebcam/`
+- `apps/android/app/src/main/java/org/beamcam/`
   - `WebcamService.kt`: foreground service. Server socket, mDNS advertisement, sessions, approval.
   - `UdpLink.kt`: UDP video, resends and keyframe requests for one session. Send errors never end it.
   - `CameraStreamer.kt`: Camera2 into MediaCodec's input surface. No pixels pass through app code.
   - `Identity.kt`: the phone's TLS key in the Android keystore. `Secure.kt`: pairing code and UDP sealing.
   - `Protocol.kt`, `Orientation.kt`: wire format and rotation math (unit tested).
   - `MainActivity.kt`: Compose UI. It only reads `WebcamState` and sends intents to the service.
-- `apps/linux/src/openwebcam/`
+- `apps/linux/src/beamcam/`
   - `protocol.py` mirrors `Protocol.kt`, `secure.py` mirrors `Secure.kt`. `client.py` is one session
     (TLS control, sealed UDP video); `config.py` keeps the pairings.
     `reassembly.py` rebuilds frames from UDP datagrams and decides what to NACK. `mdns.py` finds phones.
