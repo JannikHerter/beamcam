@@ -234,7 +234,7 @@ private fun App() {
             chosen = AppLanguage.chosen(context),
             onChoose = { tag ->
                 choosingLanguage = false
-                (context as? android.app.Activity)?.let { AppLanguage.choose(it, tag) }
+                (context as? android.app.Activity)?.let { AppLanguage.choose(it, tag, state.status != WebcamStatus.Stopped) }
             },
             onDismiss = { choosingLanguage = false },
         )

@@ -31,7 +31,8 @@ object AppLanguage {
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null)
         }
 
-    fun choose(activity: Activity, tag: String?) {
+    /** [serviceRunning]: tell the service, so its notification switches too (Android 13+ does that itself). */
+    fun choose(activity: Activity, tag: String?, serviceRunning: Boolean) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             // Android recreates the activity and updates every context of the app.
             activity.getSystemService(LocaleManager::class.java).applicationLocales =
@@ -40,15 +41,22 @@ object AppLanguage {
             activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
                 if (tag == null) remove(KEY) else putString(KEY, tag)
             }
+            if (serviceRunning) WebcamService.languageChanged(activity)
             activity.recreate()
         }
     }
 
-    /** For attachBaseContext of the activity and the service; only needed before Android 13. */
+    /**
+     * For attachBaseContext of the activity and the service, and for texts the running service
+     * shows; only needed before Android 13. Always sets a language, the phone's when none is
+     * chosen, because [base] may already carry an earlier choice.
+     */
     fun wrap(base: Context): Context {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return base
-        val tag = base.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null) ?: return base
-        val config = Configuration(base.resources.configuration).apply { setLocale(Locale.forLanguageTag(tag)) }
+        val tag = base.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null)
+        val locales = if (tag != null) LocaleList.forLanguageTags(tag) else Resources.getSystem().configuration.locales
+        if (base.resources.configuration.locales == locales) return base
+        val config = Configuration(base.resources.configuration).apply { setLocales(locales) }
         return base.createConfigurationContext(config)
     }
 
