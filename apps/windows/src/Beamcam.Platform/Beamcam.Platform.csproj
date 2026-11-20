@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Windows-only parts shared by the window and the command line: the virtual camera and decoding,
+       both in native/ (BeamcamCamera.dll). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Beamcam</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Beamcam.Core/Beamcam.Core.csproj" />
+  </ItemGroup>
+</Project>

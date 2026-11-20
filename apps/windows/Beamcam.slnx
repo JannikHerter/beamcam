@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Beamcam.Core/Beamcam.Core.csproj" />
+    <Project Path="src/Beamcam.Platform/Beamcam.Platform.csproj" />
+    <Project Path="src/Beamcam/Beamcam.csproj" />
+    <Project Path="src/Beamcam.Cli/Beamcam.Cli.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Beamcam.Core.Tests/Beamcam.Core.Tests.csproj" />
+  </Folder>
+</Solution>

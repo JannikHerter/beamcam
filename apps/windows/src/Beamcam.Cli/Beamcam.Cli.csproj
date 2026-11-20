@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- beamcam-cli.exe: the same sessions as the window, for scripts and tests. Exits when the stream
+       ends instead of reconnecting, so scripts see the failure. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AssemblyName>beamcam-cli</AssemblyName>
+    <RootNamespace>Beamcam.Cli</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Beamcam.Platform/Beamcam.Platform.csproj" />
+  </ItemGroup>
+</Project>

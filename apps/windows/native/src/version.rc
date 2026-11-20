@@ -1,0 +1,24 @@
+#include <winver.h>
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 0,1,0,0
+PRODUCTVERSION 0,1,0,0
+FILETYPE VFT_DLL
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "Beamcam"
+            VALUE "FileDescription", "Beamcam virtual camera"
+            VALUE "FileVersion", "0.1.0"
+            VALUE "ProductName", "Beamcam"
+            VALUE "ProductVersion", "0.1.0"
+            VALUE "OriginalFilename", "BeamcamCamera.dll"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END
