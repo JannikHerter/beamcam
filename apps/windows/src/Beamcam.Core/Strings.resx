@@ -45,7 +45,6 @@
   <data name="TapAllow" xml:space="preserve"><value>Tap “Allow” on Your Phone</value></data>
   <data name="PhoneAsking" xml:space="preserve"><value>Your phone is asking whether “{0}” may use its camera.</value></data>
   <data name="SameCode" xml:space="preserve"><value>It shows the same code as here:</value></data>
-  <data name="Code" xml:space="preserve"><value>Code</value></data>
   <data name="Connecting" xml:space="preserve"><value>Connecting</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="StreamingFrom" xml:space="preserve"><value>Streaming from {0}</value></data>

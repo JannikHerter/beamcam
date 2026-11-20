@@ -12,6 +12,9 @@ namespace Beamcam.App;
 public sealed record PhoneRow(Phone Phone, string Name, string Subtitle)
 {
     public string ConnectLabel => Text.Format("ConnectTo", Name);
+
+    // What screen readers say for the row.
+    public override string ToString() => Name;
 }
 
 /// <summary>The window, like apps/linux/src/beamcam/ui.py: it only renders state and starts or stops
@@ -286,9 +289,19 @@ public partial class MainWindow : Window, IControllerEvents
 
     void OnMenu(object sender, RoutedEventArgs e)
     {
-        MenuButton.ContextMenu.PlacementTarget = MenuButton;
-        MenuButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-        MenuButton.ContextMenu.IsOpen = true;
+        var menu = MenuButton.ContextMenu;
+        menu.PlacementTarget = MenuButton;
+        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        // Right-aligned under the button, so the menu stays inside the window.
+        menu.Opened += AlignMenu;
+        menu.IsOpen = true;
+    }
+
+    void AlignMenu(object? sender, RoutedEventArgs e)
+    {
+        var menu = MenuButton.ContextMenu;
+        menu.Opened -= AlignMenu;
+        menu.HorizontalOffset = MenuButton.ActualWidth - menu.ActualWidth;
     }
 
     void OnLanguage(object sender, RoutedEventArgs e)

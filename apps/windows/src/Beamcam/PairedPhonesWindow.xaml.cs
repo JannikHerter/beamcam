@@ -7,6 +7,9 @@ namespace Beamcam.App;
 public sealed record PairedRow(PairedPhone Phone, string Name, string Subtitle)
 {
     public string ForgetLabel => Text.Format("ForgetPhone", Name);
+
+    // What screen readers say for the row; the record's own text would include the fingerprint.
+    public override string ToString() => Name;
 }
 
 public partial class PairedPhonesWindow : Window

@@ -13,7 +13,7 @@
 
     <Button x:Name="MenuButton" Grid.Row="0" HorizontalAlignment="Right" Margin="0,8,12,0" Padding="10,6"
             Click="OnMenu" ToolTip="{app:Tr MainMenu}" AutomationProperties.Name="{app:Tr MainMenu}">
-      <TextBlock FontFamily="{StaticResource Icons}" Text="&#xE700;" FontSize="16" />
+      <app:Glyph FontFamily="{StaticResource Icons}" Text="&#xE700;" FontSize="16" />
       <Button.ContextMenu>
         <ContextMenu>
           <MenuItem Header="{app:Tr ConnectByAddressMenu}" Click="OnConnectByAddress" />
@@ -29,7 +29,7 @@
             BorderThickness="1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
             Background="{DynamicResource SystemFillColorCautionBackgroundBrush}">
       <DockPanel>
-        <TextBlock DockPanel.Dock="Left" FontFamily="{StaticResource Icons}" Text="&#xE7BA;" FontSize="16" Margin="0,1,10,0" />
+        <app:Glyph DockPanel.Dock="Left" FontFamily="{StaticResource Icons}" Text="&#xE7BA;" FontSize="16" Margin="0,1,10,0" />
         <TextBlock x:Name="BannerText" TextWrapping="Wrap" />
       </DockPanel>
     </Border>
@@ -38,7 +38,7 @@
       <!-- Looking for phones / choose a phone -->
       <ScrollViewer x:Name="PhonesPage" VerticalScrollBarVisibility="Auto" Focusable="False">
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24" MaxWidth="460">
-          <TextBlock FontFamily="{StaticResource Icons}" Text="&#xE714;" FontSize="48" HorizontalAlignment="Center"
+          <app:Glyph FontFamily="{StaticResource Icons}" Text="&#xE714;" FontSize="48" HorizontalAlignment="Center"
                      Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
           <TextBlock x:Name="PhonesTitle" Style="{StaticResource Heading}" Margin="0,16,0,0" />
           <TextBlock x:Name="PhonesDescription" Style="{StaticResource Secondary}" TextAlignment="Center" Margin="0,8,0,0" />
@@ -48,7 +48,7 @@
               <DataTemplate>
                 <Border Style="{StaticResource Card}" Margin="0,0,0,8">
                   <DockPanel>
-                    <TextBlock DockPanel.Dock="Left" FontFamily="{StaticResource Icons}" Text="&#xE8EA;" FontSize="22"
+                    <app:Glyph DockPanel.Dock="Left" FontFamily="{StaticResource Icons}" Text="&#xE8EA;" FontSize="22"
                                VerticalAlignment="Center" Margin="0,0,16,0" />
                     <Button DockPanel.Dock="Right" Content="{app:Tr Connect}" Style="{DynamicResource AccentButtonStyle}" Padding="16,6"
                             VerticalAlignment="Center" Click="OnConnectPhone" Tag="{Binding}"
@@ -68,12 +68,12 @@
 
       <!-- Connecting / tap Allow / reconnecting -->
       <StackPanel x:Name="ConnectingPage" Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24" MaxWidth="480">
-        <TextBlock FontFamily="{StaticResource Icons}" Text="&#xE8EA;" FontSize="48" HorizontalAlignment="Center"
+        <app:Glyph FontFamily="{StaticResource Icons}" Text="&#xE8EA;" FontSize="48" HorizontalAlignment="Center"
                    Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
         <TextBlock x:Name="ConnectingTitle" Style="{StaticResource Heading}" Margin="0,16,0,0" />
         <TextBlock x:Name="ConnectingDescription" Style="{StaticResource Secondary}" TextAlignment="Center" Margin="0,8,0,0" />
         <TextBlock x:Name="ConnectingCode" Visibility="Collapsed" FontSize="40" FontWeight="SemiBold" HorizontalAlignment="Center"
-                   Margin="0,16,0,0" AutomationProperties.Name="{app:Tr Code}" />
+                   Margin="0,16,0,0" />
         <ProgressBar IsIndeterminate="True" Width="200" Margin="0,24,0,0" AutomationProperties.Name="{app:Tr Connecting}" />
         <Button Content="{app:Tr Cancel}" HorizontalAlignment="Center" Margin="0,24,0,0" Padding="20,6" Click="OnCancel" />
       </StackPanel>
