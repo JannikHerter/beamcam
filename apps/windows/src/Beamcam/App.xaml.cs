@@ -22,6 +22,7 @@ public partial class App : Application
         }
         Log.Verbose = e.Args.Contains("--verbose");
         StartLog();
+        Log.Info($"language {Text.Apply(Config.Load().Language)}");
         base.OnStartup(e);
         var window = new MainWindow();
         window.Show();
@@ -30,6 +31,28 @@ public partial class App : Application
             while (show.WaitOne())
                 Dispatcher.BeginInvoke(window.BringToFront);
         }) { IsBackground = true, Name = "show" }.Start();
+    }
+
+    /// <summary>Starts a new window process (so every text uses the new language) and ends this one.</summary>
+    public bool Restart()
+    {
+        var path = Environment.ProcessPath;
+        if (path is null)
+            return false;
+        MainWindow?.Close();
+        _instance?.ReleaseMutex();
+        _instance?.Dispose();
+        _instance = null;
+        try
+        {
+            System.Diagnostics.Process.Start(path);
+        }
+        catch (System.ComponentModel.Win32Exception error)
+        {
+            Log.Error($"restart failed: {error.Message}");
+        }
+        Shutdown();
+        return true;
     }
 
     static void StartLog()

@@ -24,7 +24,7 @@ public sealed class VirtualCamera : IDisposable
         }
         catch (DllNotFoundException)
         {
-            problem = "Part of Beamcam is missing. Install Beamcam again.";
+            problem = Text.Get(MissingMedia() ? "CameraMediaFeaturePack" : "CameraMissingPart");
             return null;
         }
         if (hr >= 0)
@@ -32,12 +32,21 @@ public sealed class VirtualCamera : IDisposable
         Log.Error($"virtual camera failed: 0x{hr:x8}");
         problem = unchecked((uint)hr) switch
         {
-            0x80040154 => "The Beamcam camera isn’t set up on this computer. Install Beamcam again.",
-            0x8007007F => "Other apps can use Beamcam on Windows 11 only.",
-            0x80070005 => "Windows didn’t let Beamcam add its camera. Make sure camera access is on in Settings → Privacy & security → Camera.",
-            _ => $"The Beamcam camera couldn’t start (error 0x{hr:x8}). Restart your computer and try again.",
+            0x80040154 => Text.Get("CameraNotRegistered"),
+            0x8007007F => Text.Get("CameraNeedsWindows11"),
+            0x80070005 => Text.Get("CameraAccessDenied"),
+            _ => Text.Format("CameraFailed", $"0x{hr:x8}"),
         };
         return null;
+    }
+
+    /// <summary>"N" editions of Windows come without Media Foundation.</summary>
+    internal static bool MissingMedia()
+    {
+        if (!System.Runtime.InteropServices.NativeLibrary.TryLoad("mfplat.dll", out var library))
+            return true;
+        System.Runtime.InteropServices.NativeLibrary.Free(library);
+        return false;
     }
 
     public void SetIdleFrame(ReadOnlySpan<byte> bgra, int stride) => Native.BcCameraSetIdleFrame(Handle, bgra, stride);

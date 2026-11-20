@@ -28,6 +28,8 @@ public sealed class Config : IPairingStore
 
     public string? LastPhoneId { get; set; }
     public string? LastAddress { get; set; }
+    /// <summary>The language picked in the window; null follows Windows.</summary>
+    public string? Language { get; set; }
 
     Config(string path) => _path = path;
 
@@ -47,19 +49,20 @@ public sealed class Config : IPairingStore
         {
             if (JsonNode.Parse(File.ReadAllText(config._path)) is not JsonObject data)
                 return config;
-            config.LastPhoneId = Text(data["last_phone_id"]);
-            config.LastAddress = Text(data["last_address"]);
+            config.LastPhoneId = JsonText(data["last_phone_id"]);
+            config.LastAddress = JsonText(data["last_address"]);
+            config.Language = JsonText(data["language"]);
             if (data["pairings"] is JsonObject pairings)
             {
                 foreach (var (fingerprint, node) in pairings)
                 {
-                    if (node is not JsonObject entry || Text(entry["secret"]) is not { } secret)
+                    if (node is not JsonObject entry || JsonText(entry["secret"]) is not { } secret)
                         continue;
                     config._pairings[fingerprint] = new Pairing
                     {
                         Secret = secret,
-                        PhoneId = Text(entry["phone_id"]) ?? "",
-                        Name = Text(entry["name"]) is { Length: > 0 } name ? name : "Phone",
+                        PhoneId = JsonText(entry["phone_id"]) ?? "",
+                        Name = JsonText(entry["name"]) is { Length: > 0 } name ? name : "Phone",
                         LastConnected = entry["last_connected"] is JsonValue v && v.TryGetValue<long>(out var t) ? t : 0,
                     };
                 }
@@ -75,7 +78,7 @@ public sealed class Config : IPairingStore
         return config;
     }
 
-    static string? Text(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+    static string? JsonText(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 
     public void Save()
     {
@@ -87,7 +90,7 @@ public sealed class Config : IPairingStore
                 {
                     ["secret"] = p.Secret, ["phone_id"] = p.PhoneId, ["name"] = p.Name, ["last_connected"] = p.LastConnected,
                 };
-            var data = new JsonObject { ["last_phone_id"] = LastPhoneId, ["last_address"] = LastAddress, ["pairings"] = pairings };
+            var data = new JsonObject { ["last_phone_id"] = LastPhoneId, ["last_address"] = LastAddress, ["language"] = Language, ["pairings"] = pairings };
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(_path)!);

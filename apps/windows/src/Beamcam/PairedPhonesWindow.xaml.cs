@@ -6,7 +6,7 @@ namespace Beamcam.App;
 
 public sealed record PairedRow(PairedPhone Phone, string Name, string Subtitle)
 {
-    public string ForgetLabel => $"Forget {Name}";
+    public string ForgetLabel => Text.Format("ForgetPhone", Name);
 }
 
 public partial class PairedPhonesWindow : Window
@@ -28,8 +28,8 @@ public partial class PairedPhonesWindow : Window
             return "";
         var when = DateTimeOffset.FromUnixTimeSeconds(seconds).LocalDateTime;
         return when.Date == DateTime.Today
-            ? $"Last connected today at {when.ToString("t", CultureInfo.CurrentCulture)}"
-            : $"Last connected on {when.ToString("d", CultureInfo.CurrentCulture)}";
+            ? Text.Format("LastConnectedToday", when.ToString("t", CultureInfo.CurrentCulture))
+            : Text.Format("LastConnectedOn", when.ToString("d", CultureInfo.CurrentCulture));
     }
 
     void Render()
@@ -46,13 +46,13 @@ public partial class PairedPhonesWindow : Window
     {
         if (((Button)sender).Tag is not PairedRow row)
             return;
-        _forget([row.Phone], $"“{row.Name}” forgotten.");
+        _forget([row.Phone], Text.Format("PhoneForgotten", row.Name));
         Render();
     }
 
     void OnForgetAll(object sender, RoutedEventArgs e)
     {
-        _forget(_config.PairedPhones(), "Paired phones forgotten.");
+        _forget(_config.PairedPhones(), Text.Get("PhonesForgotten"));
         Render();
     }
 }

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- Every text the window shows, in English. Translations: Strings.<language>.resx; TextTests fails when one is missing. -->
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="EndDenied" xml:space="preserve"><value>The phone did not allow this computer.</value></data>
+  <data name="EndTimeout" xml:space="preserve"><value>Nobody tapped Allow on the phone in time.</value></data>
+  <data name="EndBusy" xml:space="preserve"><value>The phone is being used by another computer.</value></data>
+  <data name="EndStopped" xml:space="preserve"><value>Streaming was stopped on the phone.</value></data>
+  <data name="EndCamera" xml:space="preserve"><value>The phone’s camera stopped working.</value></data>
+  <data name="EndReplaced" xml:space="preserve"><value>Another Beamcam on this computer took over the phone.</value></data>
+  <data name="EndProtocol" xml:space="preserve"><value>The phone app and this app don’t fit together. Update both to the latest version.</value></data>
+  <data name="EndConnectFailed" xml:space="preserve"><value>Couldn’t reach the phone. Is Beamcam open on it, and on the same Wi-Fi?</value></data>
+  <data name="EndConnectionLost" xml:space="preserve"><value>Lost the connection to the phone.</value></data>
+  <data name="EndVideoError" xml:space="preserve"><value>The video from the phone couldn’t be shown.</value></data>
+  <data name="EndForgotten" xml:space="preserve"><value>Your phone doesn’t know this computer any more. Click Connect to pair again.</value></data>
+  <data name="EndUnknownPhone" xml:space="preserve"><value>This phone isn’t paired with this computer. Click Connect to pair it.</value></data>
+  <data name="EndOther" xml:space="preserve"><value>Streaming stopped ({0}).</value></data>
+  <data name="CameraMissingPart" xml:space="preserve"><value>Part of Beamcam is missing. Install Beamcam again.</value></data>
+  <data name="CameraMediaFeaturePack" xml:space="preserve"><value>This Windows doesn’t have its video parts. Add “Media Feature Pack” in Settings → System → Optional features, then restart.</value></data>
+  <data name="CameraNotRegistered" xml:space="preserve"><value>The Beamcam camera isn’t set up on this computer. Install Beamcam again.</value></data>
+  <data name="CameraNeedsWindows11" xml:space="preserve"><value>Other apps can use Beamcam on Windows 11 only.</value></data>
+  <data name="CameraAccessDenied" xml:space="preserve"><value>Windows didn’t let Beamcam add its camera. Make sure camera access is on in Settings → Privacy &amp; security → Camera.</value></data>
+  <data name="CameraFailed" xml:space="preserve"><value>The Beamcam camera couldn’t start (error {0}). Restart your computer and try again.</value></data>
+  <data name="DecoderMissing" xml:space="preserve"><value>Windows’ video decoder isn’t available (error {0}).</value></data>
+  <data name="DecoderFailed" xml:space="preserve"><value>Windows’ video decoder failed (error {0}).</value></data>
+  <data name="MainMenu" xml:space="preserve"><value>Main Menu</value></data>
+  <data name="ConnectByAddressMenu" xml:space="preserve"><value>Connect by Address…</value></data>
+  <data name="PairedPhones" xml:space="preserve"><value>Paired Phones</value></data>
+  <data name="LanguageMenu" xml:space="preserve"><value>Language…</value></data>
+  <data name="AboutBeamcam" xml:space="preserve"><value>About Beamcam</value></data>
+  <data name="LookingForPhones" xml:space="preserve"><value>Looking for phones</value></data>
+  <data name="ChooseYourPhone" xml:space="preserve"><value>Choose Your Phone</value></data>
+  <data name="LookingForYourPhone" xml:space="preserve"><value>Looking for Your Phone…</value></data>
+  <data name="OpenBeamcamOnPhone" xml:space="preserve"><value>Open Beamcam on your Android phone.</value></data>
+  <data name="SameWifi" xml:space="preserve"><value>Your phone and this computer need to be on the same Wi-Fi.</value></data>
+  <data name="Connect" xml:space="preserve"><value>Connect</value></data>
+  <data name="ConnectTo" xml:space="preserve"><value>Connect to {0}</value></data>
+  <data name="PairedAddress" xml:space="preserve"><value>Paired · {0}</value></data>
+  <data name="ConnectingTo" xml:space="preserve"><value>Connecting to {0}…</value></data>
+  <data name="ReconnectingTo" xml:space="preserve"><value>Reconnecting to {0}…</value></data>
+  <data name="ConnectionDropped" xml:space="preserve"><value>The connection dropped. Trying again…</value></data>
+  <data name="TapAllow" xml:space="preserve"><value>Tap “Allow” on Your Phone</value></data>
+  <data name="PhoneAsking" xml:space="preserve"><value>Your phone is asking whether “{0}” may use its camera.</value></data>
+  <data name="SameCode" xml:space="preserve"><value>It shows the same code as here:</value></data>
+  <data name="Code" xml:space="preserve"><value>Code</value></data>
+  <data name="Connecting" xml:space="preserve"><value>Connecting</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="StreamingFrom" xml:space="preserve"><value>Streaming from {0}</value></data>
+  <data name="ChooseCamera" xml:space="preserve"><value>Choose “{0}” as the camera in your video call, browser or any other app.</value></data>
+  <data name="PreviewOnly" xml:space="preserve"><value>Only shown here: other apps can’t use the picture right now.</value></data>
+  <data name="SwitchCamera" xml:space="preserve"><value>Switch Camera</value></data>
+  <data name="Disconnect" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="PictureFromPhone" xml:space="preserve"><value>Picture from your phone</value></data>
+  <data name="NotAnAddress" xml:space="preserve"><value>That doesn’t look like an address. It should look like {0}</value></data>
+  <data name="ConnectByAddress" xml:space="preserve"><value>Connect by Address</value></data>
+  <data name="TypeAddress" xml:space="preserve"><value>Type the address shown in the Beamcam app on your phone.</value></data>
+  <data name="Address" xml:space="preserve"><value>Address</value></data>
+  <data name="PairedIntro" xml:space="preserve"><value>These phones let this computer in without asking. If you forget one, click Connect and tap Allow on the phone to use it again.</value></data>
+  <data name="Forget" xml:space="preserve"><value>Forget</value></data>
+  <data name="ForgetPhone" xml:space="preserve"><value>Forget {0}</value></data>
+  <data name="ForgetAll" xml:space="preserve"><value>Forget All</value></data>
+  <data name="NoPairedPhones" xml:space="preserve"><value>No Paired Phones</value></data>
+  <data name="PhonesShowUpHere" xml:space="preserve"><value>Phones you connect to show up here.</value></data>
+  <data name="LastConnectedToday" xml:space="preserve"><value>Last connected today at {0}</value></data>
+  <data name="LastConnectedOn" xml:space="preserve"><value>Last connected on {0}</value></data>
+  <data name="PhoneForgotten" xml:space="preserve"><value>“{0}” forgotten.</value></data>
+  <data name="PhonesForgotten" xml:space="preserve"><value>Paired phones forgotten.</value></data>
+  <data name="Tagline" xml:space="preserve"><value>Use your Android phone as a webcam.</value></data>
+  <data name="Language" xml:space="preserve"><value>Language</value></data>
+  <data name="LanguageRestart" xml:space="preserve"><value>Beamcam restarts to switch the language. A running stream stops.</value></data>
+  <data name="SameAsComputer" xml:space="preserve"><value>Same as this computer ({0})</value></data>
+  <data name="RestartBeamcam" xml:space="preserve"><value>Restart Beamcam</value></data>
+  <data name="RestartFailed" xml:space="preserve"><value>Close and open Beamcam to use the new language.</value></data>
+  <data name="WaitingForPhone" xml:space="preserve"><value>Waiting for the phone</value></data>
+  <data name="ConnectInApp" xml:space="preserve"><value>Connect it in the Beamcam app on this computer.</value></data>
+</root>

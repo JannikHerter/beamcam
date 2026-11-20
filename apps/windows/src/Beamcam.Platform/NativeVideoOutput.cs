@@ -21,9 +21,19 @@ public sealed class NativeVideoOutput(VirtualCamera? camera, Action<string> onEr
 
     public void Start(StreamInfo info)
     {
-        var hr = Native.BcVideoCreate(info.Width, info.Height, info.Fps, camera?.Handle ?? IntPtr.Zero, out _video);
+        int hr;
+        try
+        {
+            hr = Native.BcVideoCreate(info.Width, info.Height, info.Fps, camera?.Handle ?? IntPtr.Zero, out _video);
+        }
+        catch (DllNotFoundException)
+        {
+            throw new VideoException(Text.Get(VirtualCamera.MissingMedia() ? "CameraMediaFeaturePack" : "CameraMissingPart"));
+        }
+        if (unchecked((uint)hr) == 0x80040154) // the H.264 decoder is not there
+            throw new VideoException(Text.Get("CameraMediaFeaturePack"));
         if (hr < 0)
-            throw new VideoException($"Windows’ video decoder isn’t available (error 0x{hr:x8}).");
+            throw new VideoException(Text.Format("DecoderMissing", $"0x{hr:x8}"));
         _worker = new Thread(Work) { IsBackground = true, Name = "decode" };
         _worker.Start();
     }
@@ -80,7 +90,7 @@ public sealed class NativeVideoOutput(VirtualCamera? camera, Action<string> onEr
             }
             Log.Debug($"decoder rejected a frame: 0x{hr:x8}");
             if (++errors == MaxErrors)
-                onError($"Windows’ video decoder failed (error 0x{hr:x8}).");
+                onError(Text.Format("DecoderFailed", $"0x{hr:x8}"));
         }
     }
 

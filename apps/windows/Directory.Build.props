@@ -8,6 +8,6 @@
     <Authors>Beamcam</Authors>
     <Product>Beamcam</Product>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <SatelliteResourceLanguages>en;de</SatelliteResourceLanguages>
   </PropertyGroup>
 </Project>

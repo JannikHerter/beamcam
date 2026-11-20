@@ -23,8 +23,8 @@ static class IdleFrame
                 var formatted = new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeface, size, new SolidColorBrush(color), 1.0);
                 context.DrawText(formatted, new Point((width - formatted.Width) / 2, y));
             }
-            Text("Waiting for the phone", 44, Colors.White, 390);
-            Text("Connect it in the Beamcam app on this computer.", 26, Color.FromRgb(0xb8, 0xbe, 0xc4), 456);
+            Text(Beamcam.Text.Get("WaitingForPhone"), 44, Colors.White, 390);
+            Text(Beamcam.Text.Get("ConnectInApp"), 26, Color.FromRgb(0xb8, 0xbe, 0xc4), 456);
         }
         var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(visual);

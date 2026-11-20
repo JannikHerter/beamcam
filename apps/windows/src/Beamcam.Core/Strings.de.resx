@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- German: informal “du”, “Handy”, “WLAN”, „Zulassen“ (the phone's button). Same wording as apps/linux/src/beamcam/locale/de.po. -->
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="EndDenied" xml:space="preserve"><value>Das Handy hat diesen Computer nicht zugelassen.</value></data>
+  <data name="EndTimeout" xml:space="preserve"><value>Auf dem Handy wurde nicht rechtzeitig auf „Zulassen“ getippt.</value></data>
+  <data name="EndBusy" xml:space="preserve"><value>Das Handy wird gerade von einem anderen Computer verwendet.</value></data>
+  <data name="EndStopped" xml:space="preserve"><value>Die Übertragung wurde auf dem Handy beendet.</value></data>
+  <data name="EndCamera" xml:space="preserve"><value>Die Kamera des Handys funktioniert nicht mehr.</value></data>
+  <data name="EndReplaced" xml:space="preserve"><value>Ein anderes Beamcam auf diesem Computer hat das Handy übernommen.</value></data>
+  <data name="EndProtocol" xml:space="preserve"><value>Die Handy-App und diese App passen nicht zusammen. Aktualisiere beide auf die neueste Version.</value></data>
+  <data name="EndConnectFailed" xml:space="preserve"><value>Das Handy ist nicht erreichbar. Ist Beamcam darauf geöffnet und im selben WLAN?</value></data>
+  <data name="EndConnectionLost" xml:space="preserve"><value>Die Verbindung zum Handy ist abgebrochen.</value></data>
+  <data name="EndVideoError" xml:space="preserve"><value>Das Video vom Handy konnte nicht angezeigt werden.</value></data>
+  <data name="EndForgotten" xml:space="preserve"><value>Dein Handy kennt diesen Computer nicht mehr. Klicke auf „Verbinden“, um ihn erneut zu koppeln.</value></data>
+  <data name="EndUnknownPhone" xml:space="preserve"><value>Dieses Handy ist nicht mit diesem Computer gekoppelt. Klicke auf „Verbinden“, um es zu koppeln.</value></data>
+  <data name="EndOther" xml:space="preserve"><value>Die Übertragung wurde beendet ({0}).</value></data>
+  <data name="CameraMissingPart" xml:space="preserve"><value>Ein Teil von Beamcam fehlt. Installiere Beamcam erneut.</value></data>
+  <data name="CameraMediaFeaturePack" xml:space="preserve"><value>Diesem Windows fehlen die Videokomponenten. Füge „Media Feature Pack“ unter Einstellungen → System → Optionale Features hinzu und starte dann neu.</value></data>
+  <data name="CameraNotRegistered" xml:space="preserve"><value>Die Kamera „Beamcam“ ist auf diesem Computer nicht eingerichtet. Installiere Beamcam erneut.</value></data>
+  <data name="CameraNeedsWindows11" xml:space="preserve"><value>Andere Apps können Beamcam nur unter Windows 11 nutzen.</value></data>
+  <data name="CameraAccessDenied" xml:space="preserve"><value>Windows hat Beamcam nicht erlaubt, seine Kamera hinzuzufügen. Prüfe, ob der Kamerazugriff unter Einstellungen → Datenschutz und Sicherheit → Kamera eingeschaltet ist.</value></data>
+  <data name="CameraFailed" xml:space="preserve"><value>Die Kamera „Beamcam“ konnte nicht starten (Fehler {0}). Starte deinen Computer neu und versuche es erneut.</value></data>
+  <data name="DecoderMissing" xml:space="preserve"><value>Der Videodecoder von Windows ist nicht verfügbar (Fehler {0}).</value></data>
+  <data name="DecoderFailed" xml:space="preserve"><value>Der Videodecoder von Windows ist ausgefallen (Fehler {0}).</value></data>
+  <data name="MainMenu" xml:space="preserve"><value>Hauptmenü</value></data>
+  <data name="ConnectByAddressMenu" xml:space="preserve"><value>Über Adresse verbinden…</value></data>
+  <data name="PairedPhones" xml:space="preserve"><value>Gekoppelte Handys</value></data>
+  <data name="LanguageMenu" xml:space="preserve"><value>Sprache…</value></data>
+  <data name="AboutBeamcam" xml:space="preserve"><value>Info zu Beamcam</value></data>
+  <data name="LookingForPhones" xml:space="preserve"><value>Handys werden gesucht</value></data>
+  <data name="ChooseYourPhone" xml:space="preserve"><value>Wähle dein Handy</value></data>
+  <data name="LookingForYourPhone" xml:space="preserve"><value>Dein Handy wird gesucht…</value></data>
+  <data name="OpenBeamcamOnPhone" xml:space="preserve"><value>Öffne Beamcam auf deinem Android-Handy.</value></data>
+  <data name="SameWifi" xml:space="preserve"><value>Dein Handy und dieser Computer müssen im selben WLAN sein.</value></data>
+  <data name="Connect" xml:space="preserve"><value>Verbinden</value></data>
+  <data name="ConnectTo" xml:space="preserve"><value>Mit {0} verbinden</value></data>
+  <data name="PairedAddress" xml:space="preserve"><value>Gekoppelt · {0}</value></data>
+  <data name="ConnectingTo" xml:space="preserve"><value>Verbindung zu {0} wird hergestellt…</value></data>
+  <data name="ReconnectingTo" xml:space="preserve"><value>Verbindung zu {0} wird wiederhergestellt…</value></data>
+  <data name="ConnectionDropped" xml:space="preserve"><value>Die Verbindung ist abgebrochen. Neuer Versuch…</value></data>
+  <data name="TapAllow" xml:space="preserve"><value>Tippe auf deinem Handy auf „Zulassen“</value></data>
+  <data name="PhoneAsking" xml:space="preserve"><value>Dein Handy fragt, ob „{0}“ seine Kamera verwenden darf.</value></data>
+  <data name="SameCode" xml:space="preserve"><value>Es zeigt denselben Code wie hier:</value></data>
+  <data name="Code" xml:space="preserve"><value>Code</value></data>
+  <data name="Connecting" xml:space="preserve"><value>Verbindung wird hergestellt</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Abbrechen</value></data>
+  <data name="StreamingFrom" xml:space="preserve"><value>Übertragung von {0}</value></data>
+  <data name="ChooseCamera" xml:space="preserve"><value>Wähle „{0}“ als Kamera in deinem Videoanruf, Browser oder jeder anderen App.</value></data>
+  <data name="PreviewOnly" xml:space="preserve"><value>Nur hier zu sehen: Andere Apps können das Bild gerade nicht nutzen.</value></data>
+  <data name="SwitchCamera" xml:space="preserve"><value>Kamera wechseln</value></data>
+  <data name="Disconnect" xml:space="preserve"><value>Trennen</value></data>
+  <data name="PictureFromPhone" xml:space="preserve"><value>Bild von deinem Handy</value></data>
+  <data name="NotAnAddress" xml:space="preserve"><value>Das sieht nicht nach einer Adresse aus. Sie sollte so aussehen: {0}</value></data>
+  <data name="ConnectByAddress" xml:space="preserve"><value>Über Adresse verbinden</value></data>
+  <data name="TypeAddress" xml:space="preserve"><value>Gib die Adresse ein, die die Beamcam-App auf deinem Handy anzeigt.</value></data>
+  <data name="Address" xml:space="preserve"><value>Adresse</value></data>
+  <data name="PairedIntro" xml:space="preserve"><value>Diese Handys lassen diesen Computer ohne Nachfrage zu. Wenn du eines vergisst, klicke auf „Verbinden“ und tippe auf dem Handy auf „Zulassen“, um es wieder zu nutzen.</value></data>
+  <data name="Forget" xml:space="preserve"><value>Vergessen</value></data>
+  <data name="ForgetPhone" xml:space="preserve"><value>{0} vergessen</value></data>
+  <data name="ForgetAll" xml:space="preserve"><value>Alle vergessen</value></data>
+  <data name="NoPairedPhones" xml:space="preserve"><value>Keine gekoppelten Handys</value></data>
+  <data name="PhonesShowUpHere" xml:space="preserve"><value>Handys, mit denen du dich verbindest, erscheinen hier.</value></data>
+  <data name="LastConnectedToday" xml:space="preserve"><value>Zuletzt verbunden: heute um {0}</value></data>
+  <data name="LastConnectedOn" xml:space="preserve"><value>Zuletzt verbunden: {0}</value></data>
+  <data name="PhoneForgotten" xml:space="preserve"><value>„{0}“ vergessen.</value></data>
+  <data name="PhonesForgotten" xml:space="preserve"><value>Gekoppelte Handys vergessen.</value></data>
+  <data name="Tagline" xml:space="preserve"><value>Nutze dein Android-Handy als Webcam.</value></data>
+  <data name="Language" xml:space="preserve"><value>Sprache</value></data>
+  <data name="LanguageRestart" xml:space="preserve"><value>Beamcam startet neu, um die Sprache zu wechseln. Eine laufende Übertragung wird beendet.</value></data>
+  <data name="SameAsComputer" xml:space="preserve"><value>Wie dieser Computer ({0})</value></data>
+  <data name="RestartBeamcam" xml:space="preserve"><value>Beamcam neu starten</value></data>
+  <data name="RestartFailed" xml:space="preserve"><value>Schließe Beamcam und öffne es wieder, um die neue Sprache zu verwenden.</value></data>
+  <data name="WaitingForPhone" xml:space="preserve"><value>Warten auf das Handy</value></data>
+  <data name="ConnectInApp" xml:space="preserve"><value>Verbinde es in der Beamcam-App auf diesem Computer.</value></data>
+</root>

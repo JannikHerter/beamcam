@@ -1,5 +1,6 @@
-; The Beamcam installer: one file, a few clicks, no terminal. Build on Windows with Inno Setup 6:
+﻿; The Beamcam installer: one file, a few clicks, no terminal. Build on Windows with Inno Setup 6:
 ;   iscc installer\Beamcam.iss        (expects the built app in out\app, see README.md)
+; Saved as UTF-8 with a byte order mark, which Inno Setup needs for the German texts.
 ; It needs administrator rights once, because Windows only loads virtual camera sources that are
 ; registered for the whole computer (HKLM), from a folder the camera service can read.
 
@@ -29,11 +30,29 @@ SolidCompression=yes
 CloseApplications=yes
 RestartApplications=no
 
+ShowLanguageDialog=auto
+
+; Setup follows the Windows display language, like the app. German: informal "du", like the app.
+[Languages]
+Name: "en"; MessagesFile: "compiler:Default.isl"
+Name: "de"; MessagesFile: "compiler:Languages\German.isl"
+
 [Messages]
-WelcomeLabel2=Beamcam turns your Android phone into a webcam for this computer.%n%nAfter installing, open Beamcam here and on your phone, and click Connect.
+en.WelcomeLabel2=Beamcam turns your Android phone into a webcam for this computer.%n%nAfter installing, open Beamcam here and on your phone, and click Connect.
+de.WelcomeLabel2=Beamcam macht dein Android-Handy zur Webcam für diesen Computer.%n%nÖffne Beamcam nach der Installation hier und auf deinem Handy und klicke auf „Verbinden“.
+
+[CustomMessages]
+en.DesktopIcon=Put Beamcam on the desktop
+de.DesktopIcon=Beamcam auf den Desktop legen
+en.FindPhone=Allowing Beamcam to find your phone…
+de.FindPhone=Beamcam darf dein Handy finden…
+en.OpenBeamcam=Open Beamcam
+de.OpenBeamcam=Beamcam öffnen
+en.NeedsWindows11=Beamcam needs Windows 11. This computer has an older Windows.
+de.NeedsWindows11=Beamcam braucht Windows 11. Auf diesem Computer läuft ein älteres Windows.
 
 [Tasks]
-Name: desktopicon; Description: "Put Beamcam on the desktop"; Flags: unchecked
+Name: desktopicon; Description: "{cm:DesktopIcon}"; Flags: unchecked
 
 [Files]
 Source: "..\out\app\*"; Excludes: "BeamcamCamera.dll,*.pdb"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
@@ -46,10 +65,10 @@ Name: "{autodesktop}\Beamcam"; Filename: "{app}\Beamcam.exe"; Tasks: desktopicon
 [Run]
 ; Phones answer the search for them from the local network; without this rule Windows would drop
 ; those answers or ask the user about the firewall. Local network only.
-Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Beamcam"""; Flags: runhidden; StatusMsg: "Allowing Beamcam to find your phone…"
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Beamcam"""; Flags: runhidden; StatusMsg: "{cm:FindPhone}"
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""Beamcam"" dir=in action=allow protocol=UDP remoteip=localsubnet program=""{app}\Beamcam.exe"" enable=yes"; Flags: runhidden
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""Beamcam"" dir=in action=allow protocol=UDP remoteip=localsubnet program=""{app}\beamcam-cli.exe"" enable=yes"; Flags: runhidden
-Filename: "{app}\Beamcam.exe"; Description: "Open Beamcam"; Flags: postinstall nowait skipifsilent runasoriginaluser
+Filename: "{app}\Beamcam.exe"; Description: "{cm:OpenBeamcam}"; Flags: postinstall nowait skipifsilent runasoriginaluser
 
 [UninstallRun]
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Beamcam"""; Flags: runhidden; RunOnceId: "firewall"
@@ -62,7 +81,7 @@ begin
   GetWindowsVersionEx(Version);
   Result := (Version.Major > 10) or ((Version.Major = 10) and (Version.Build >= 22000));
   if not Result then
-    MsgBox('Beamcam needs Windows 11. This computer has an older Windows.', mbError, MB_OK);
+    MsgBox(CustomMessage('NeedsWindows11'), mbError, MB_OK);
 end;
 
 // The camera service keeps the camera's DLL loaded; stop it so an update can replace the file.

@@ -31,6 +31,16 @@ pairing and reconnect rules as the [Linux app](../linux/README.md); the
     H.264 decoder (`video.cpp`) and the rotate-and-fit math (`convert.cpp`, unit tested).
 - `installer/Beamcam.iss`: the Inno Setup installer.
 
+## Translations
+
+The window follows the Windows display language; **☰ → Language…** picks another and restarts
+the window. Texts live in `src/Beamcam.Core/Strings.resx` (English) and `Strings.de.resx` (German,
+same wording as `apps/linux/src/beamcam/locale/de.po`: “du”, „Handy“, „WLAN“, „Zulassen“). Code uses
+`Text.Get("Key")` / `Text.Format("Key", …)`, XAML `{app:Tr Key}`. `TextTests` fails when a text has no
+German version, a key is missing or unused, or placeholders differ. A new language needs a
+`Strings.<code>.resx`, an entry in `Text.Languages` and one in the installer's `[Languages]`.
+`beamcam-cli` stays English, because scripts read it.
+
 Why this split: a virtual camera on Windows 11 is a COM media source that the Frame Server
 (a service in session 0) loads, so that part has to be a native DLL. Everything else is C#:
 TLS (`SslStream`, Windows' own TLS), AES-GCM (`AesGcm`, Windows' CNG), sockets and JSON are in

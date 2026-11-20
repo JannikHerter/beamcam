@@ -46,22 +46,22 @@ public static class EndReasons
 
     static readonly Dictionary<string, string> Messages = new()
     {
-        ["denied"] = "The phone did not allow this computer.",
-        ["timeout"] = "Nobody tapped Allow on the phone in time.",
-        ["busy"] = "The phone is being used by another computer.",
-        ["stopped"] = "Streaming was stopped on the phone.",
-        ["camera"] = "The phone’s camera stopped working.",
-        ["replaced"] = "Another Beamcam on this computer took over the phone.",
-        [Protocol] = "The phone app and this app don’t fit together. Update both to the latest version.",
-        [ConnectFailed] = "Couldn’t reach the phone. Is Beamcam open on it, and on the same Wi-Fi?",
-        [ConnectionLost] = "Lost the connection to the phone.",
-        [VideoError] = "The video from the phone couldn’t be shown.",
-        [Forgotten] = "Your phone doesn’t know this computer any more. Click Connect to pair again.",
-        [UnknownPhone] = "This phone isn’t paired with this computer. Click Connect to pair it.",
+        ["denied"] = "EndDenied",
+        ["timeout"] = "EndTimeout",
+        ["busy"] = "EndBusy",
+        ["stopped"] = "EndStopped",
+        ["camera"] = "EndCamera",
+        ["replaced"] = "EndReplaced",
+        [Protocol] = "EndProtocol",
+        [ConnectFailed] = "EndConnectFailed",
+        [ConnectionLost] = "EndConnectionLost",
+        [VideoError] = "EndVideoError",
+        [Forgotten] = "EndForgotten",
+        [UnknownPhone] = "EndUnknownPhone",
     };
 
     public static string Message(string reason) =>
-        Messages.TryGetValue(reason, out var text) ? text : $"Streaming stopped ({reason}).";
+        Messages.TryGetValue(reason, out var key) ? Text.Get(key) : Text.Format("EndOther", reason);
 }
 
 public static class Address
