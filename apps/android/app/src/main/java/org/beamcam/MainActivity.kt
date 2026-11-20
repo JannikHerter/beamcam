@@ -375,10 +375,10 @@ private fun localAddresses(): List<String> = runCatching {
 private fun BeamcamTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
     val dark = isSystemInDarkTheme()
-    val brand = Color(0xFF16A34A)
+    val brand = Color(0xFF0F766E)
     val colors = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        dark -> darkColorScheme(primary = Color(0xFF4ADE80))
+        dark -> darkColorScheme(primary = Color(0xFF2DD4BF))
         else -> lightColorScheme(primary = brand)
     }
     MaterialTheme(colorScheme = colors, content = content)
