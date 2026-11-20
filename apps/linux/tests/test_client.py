@@ -52,6 +52,7 @@ class MemoryPairings:
     def __init__(self, known=None):
         self.secrets = dict(known or {})
         self.paired = []
+        self.connections = []
 
     def secret_for(self, fingerprint):
         return self.secrets.get(fingerprint)
@@ -62,6 +63,9 @@ class MemoryPairings:
 
     def forget(self, fingerprint):
         self.secrets.pop(fingerprint, None)
+
+    def connected(self, fingerprint, name):
+        self.connections.append((fingerprint, name))
 
 
 class Recorder:
@@ -172,9 +176,11 @@ class PairingTest(unittest.TestCase):
 
     def test_paired_phone_gets_the_secret_and_no_prompt(self):
         port, received = fake_phone([accept(), END_STOPPED])
-        _, recorder = run_session(port, MemoryPairings({PHONE_FP: SECRET}))
+        pairings = MemoryPairings({PHONE_FP: SECRET})
+        _, recorder = run_session(port, pairings)
         self.assertEqual(received["hello"]["secret"], SECRET.hex())
         self.assertEqual(recorder.events[-1], ("end", "stopped"))
+        self.assertEqual(pairings.connections, [(PHONE_FP, "Pixel")])
 
     def test_unknown_phone_is_told_nothing_without_a_click(self):
         """A stranger advertising our phone's name must not even learn this computer's name."""

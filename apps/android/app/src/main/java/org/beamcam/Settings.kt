@@ -26,23 +26,40 @@ class Settings(context: Context) {
         get() = runCatching { Facing.valueOf(prefs.getString(KEY_FACING, null) ?: "") }.getOrDefault(Facing.FRONT)
         set(value) = prefs.edit { putString(KEY_FACING, value.name) }
 
-    /** Allowed computers are the SHA-256 (hex) of the secret each one got when it paired. */
-    fun isAllowed(secretHash: String): Boolean = secretHash in allowed()
-
-    fun allow(secretHash: String) = prefs.edit { putStringSet(KEY_ALLOWED, allowed() + secretHash) }
-
-    fun forgetComputers() = prefs.edit {
-        remove(KEY_ALLOWED)
-        remove(KEY_LEGACY_TRUSTED)
+    /** Newest first. Read and written from session threads and the UI, hence [lock]. */
+    fun allowedComputers(): List<AllowedComputer> = synchronized(lock) {
+        AllowedComputers.decode(prefs.getString(KEY_COMPUTERS, null), prefs.getStringSet(KEY_ALLOWED, emptySet()).orEmpty())
     }
 
-    private fun allowed(): Set<String> = prefs.getStringSet(KEY_ALLOWED, emptySet()).orEmpty()
+    fun isAllowed(secretHash: String): Boolean = allowedComputers().any { it.secretHash == secretHash }
+
+    /** Allows [secretHash], or notes that it connected again. */
+    fun connected(secretHash: String, name: String) = update {
+        AllowedComputers.connected(it, secretHash, name, System.currentTimeMillis())
+    }
+
+    fun forgetComputer(secretHash: String) = update { AllowedComputers.without(it, secretHash) }
+
+    fun forgetComputers() = update { emptyList() }
+
+    private fun update(transform: (List<AllowedComputer>) -> List<AllowedComputer>) = synchronized(lock) {
+        val computers = transform(allowedComputers())
+        prefs.edit {
+            putString(KEY_COMPUTERS, AllowedComputers.encode(computers))
+            remove(KEY_ALLOWED)
+            remove(KEY_LEGACY_TRUSTED)
+        }
+    }
 
     private companion object {
         const val KEY_DEVICE_ID = "device_id"
+        const val KEY_COMPUTERS = "allowed_computers"
+        // Before names were stored: a plain set of secret hashes, migrated on the next change.
         const val KEY_ALLOWED = "allowed_secret_hashes"
-        // Protocol 1 trusted plain client ids; they grant nothing now and are dropped on "forget".
+        // Protocol 1 trusted plain client ids; they grant nothing now and are dropped on the next change.
         const val KEY_LEGACY_TRUSTED = "trusted_clients"
         const val KEY_FACING = "facing"
+        // Settings objects in the service and the activity share one file.
+        val lock = Any()
     }
 }

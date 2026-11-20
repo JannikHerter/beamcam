@@ -14,7 +14,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
 from beamcam import APP_ID, __version__, virtualcam  # noqa: E402
 from beamcam.client import CLOSED, StreamInfo, end_message, parse_address  # noqa: E402
-from beamcam.config import Config, computer_name  # noqa: E402
+from beamcam.config import Config, PairedPhone, computer_name  # noqa: E402
 from beamcam.controller import Controller  # noqa: E402
 from beamcam.mdns import Browser, Phone  # noqa: E402
 from beamcam.pipeline import Pipeline, missing_elements  # noqa: E402
@@ -22,6 +22,16 @@ from beamcam.reconnect import Reconnector, Target  # noqa: E402
 
 log = logging.getLogger(__name__)
 
+
+
+def _last_connected(timestamp: int) -> str | None:
+    if timestamp <= 0:
+        return None
+    when = GLib.DateTime.new_from_unix_local(timestamp)
+    now = GLib.DateTime.new_now_local()
+    if (when.get_year(), when.get_day_of_year()) == (now.get_year(), now.get_day_of_year()):
+        return when.format("Last connected today at %R")
+    return when.format("Last connected on %x")
 
 
 class Window(Adw.ApplicationWindow):
@@ -51,7 +61,7 @@ class Window(Adw.ApplicationWindow):
         header = Adw.HeaderBar()
         menu = Gio.Menu()
         menu.append("Connect by Address…", "win.connect-address")
-        menu.append("Forget Paired Phones…", "win.forget-phones")
+        menu.append("Paired Phones", "win.paired-phones")
         menu.append("Remove Virtual Camera…", "win.remove-camera")
         menu.append("About Beamcam", "win.about")
         header.pack_end(Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu, tooltip_text="Main Menu"))
@@ -62,7 +72,7 @@ class Window(Adw.ApplicationWindow):
 
         for name, callback in (
             ("connect-address", self._ask_address),
-            ("forget-phones", self._confirm_forget_phones),
+            ("paired-phones", self._show_paired_phones),
             ("remove-camera", self._confirm_remove_camera),
             ("about", self._show_about),
         ):
@@ -216,24 +226,57 @@ class Window(Adw.ApplicationWindow):
         dialog.connect("response", on_response)
         dialog.present(self)
 
-    def _confirm_forget_phones(self) -> None:
-        dialog = Adw.AlertDialog(
-            heading="Forget Paired Phones?",
-            body="This computer will no longer connect to your phones by itself. To use a phone again, "
-            "click Connect and tap Allow on the phone.",
-        )
-        dialog.add_response("cancel", "Cancel")
-        dialog.add_response("forget", "Forget")
-        dialog.set_response_appearance("forget", Adw.ResponseAppearance.DESTRUCTIVE)
+    def _show_paired_phones(self) -> None:
+        dialog = Adw.Dialog(title="Paired Phones", content_width=440, content_height=420)
 
-        def on_response(_dialog, response: str) -> None:
-            if response == "forget":
+        def forget(phones: list[PairedPhone], message: str) -> None:
+            target = self.reconnector.target
+            busy = self.controller is not None or self.reconnector.reconnecting
+            if busy and target is not None and any(p.phone_id == target.phone_id for p in phones):
                 self.disconnect()
-                self.config.forget_all()
-                self._render_phones()
-                self.toast("Paired phones forgotten.")
+            for phone in phones:
+                self.config.forget(phone.fingerprint)
+            self._render_phones()
+            self.toast(message)
+            render()
 
-        dialog.connect("response", on_response)
+        def render() -> None:
+            phones = self.config.paired_phones()
+            view = Adw.ToolbarView()
+            view.add_top_bar(Adw.HeaderBar())
+            if not phones:
+                view.set_content(
+                    Adw.StatusPage(
+                        icon_name="phone-symbolic",
+                        title="No Paired Phones",
+                        description="Phones you connect to show up here.",
+                    )
+                )
+                dialog.set_child(view)
+                return
+            page = Adw.PreferencesPage()
+            group = Adw.PreferencesGroup(
+                description="These phones let this computer in without asking. If you forget one, click Connect "
+                "and tap Allow on the phone to use it again."
+            )
+            for phone in phones:
+                row = Adw.ActionRow(title=GLib.markup_escape_text(phone.name), subtitle=_last_connected(phone.last_connected))
+                row.add_prefix(Gtk.Image(icon_name="phone-symbolic"))
+                button = Gtk.Button(label="Forget", valign=Gtk.Align.CENTER, css_classes=["flat"])
+                button.connect("clicked", lambda _b, p=phone: forget([p], f"“{p.name}” forgotten."))
+                row.add_suffix(button)
+                group.add(row)
+            page.add(group)
+            if len(phones) > 1:
+                all_group = Adw.PreferencesGroup()
+                button = Gtk.Button(label="Forget All", halign=Gtk.Align.CENTER, css_classes=["destructive-action", "pill"])
+                button.connect("clicked", lambda _b: forget(phones, "Paired phones forgotten."))
+                all_group.add(button)
+                page.add(all_group)
+            view.set_content(page)
+            dialog.set_child(view)
+
+        render()
         dialog.present(self)
 
     def _confirm_remove_camera(self) -> None:

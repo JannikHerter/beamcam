@@ -7,6 +7,7 @@ import logging
 import os
 import socket
 import threading
+import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -21,12 +22,21 @@ def config_path() -> Path:
 _lock = threading.Lock()
 
 
+@dataclass(frozen=True)
+class PairedPhone:
+    fingerprint: str
+    phone_id: str
+    name: str
+    last_connected: int  # unix seconds, 0 if unknown (paired before this was stored)
+
+
 @dataclass
 class Config:
     last_phone_id: str | None = None
     last_address: str | None = None
     # Phones this computer paired with, by certificate fingerprint (hex):
-    # {"secret": hex, "phone_id": str, "name": str}. The secret is what the phone allowed.
+    # {"secret": hex, "phone_id": str, "name": str, "last_connected": unix seconds}.
+    # The secret is what the phone allowed.
     pairings: dict[str, dict] = field(default_factory=dict)
 
     @staticmethod
@@ -76,8 +86,29 @@ class Config:
             # A phone that got a new key (app reinstalled) replaces its old pairing.
             for old in [fp for fp, e in self.pairings.items() if phone_id and e.get("phone_id") == phone_id]:
                 del self.pairings[old]
-            self.pairings[fingerprint] = {"secret": secret.hex(), "phone_id": phone_id, "name": name}
+            self.pairings[fingerprint] = {
+                "secret": secret.hex(), "phone_id": phone_id, "name": name, "last_connected": int(time.time())
+            }
         self.save()
+
+    def connected(self, fingerprint: str, name: str) -> None:
+        """A paired phone accepted again; it may have been renamed."""
+        with _lock:
+            entry = self.pairings.get(fingerprint)
+            if entry is None:
+                return
+            entry["name"] = name
+            entry["last_connected"] = int(time.time())
+        self.save()
+
+    def paired_phones(self) -> list[PairedPhone]:
+        """Most recently connected first."""
+        with _lock:
+            phones = [
+                PairedPhone(fp, str(e.get("phone_id", "")), str(e.get("name") or "Phone"), int(e.get("last_connected") or 0))
+                for fp, e in self.pairings.items()
+            ]
+        return sorted(phones, key=lambda p: p.last_connected, reverse=True)
 
     def forget(self, fingerprint: str) -> None:
         with _lock:

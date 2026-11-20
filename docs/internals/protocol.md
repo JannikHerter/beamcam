@@ -11,9 +11,13 @@ misunderstand does. Version 2 added TLS and pairing; a version 1 peer cannot tal
   the phone's screen show the real one). The connection is **TLS 1.2+** from the first byte.
 - Discovery: DNS-SD service `_beamcam._tcp.local`, instance name = phone name,
   TXT `id=<stable phone id>`, `v=2`. Nothing in mDNS is trusted; it only says where to connect.
-- One session at a time; a second computer gets `END busy`. A computer that reconnects with the
-  same pairing replaces its own older session, which gets `END replaced` (after a Wi-Fi change the
-  older one is usually dead and would hold the camera until its heartbeat timed out).
+- One session at a time; a second computer gets `END busy`. Two exceptions, both only for a
+  computer that presents a secret the phone knows:
+  - It replaces its own older session, which gets `END replaced` (after a Wi-Fi change the older
+    one is usually dead and would hold the camera until its heartbeat timed out).
+  - It takes over from a computer that is still waiting for the user to allow it; that one gets
+    `END busy` and the prompt closes. Otherwise anyone on the network could keep the phone busy
+    by asking again and again.
 
 ## Identity and pairing
 

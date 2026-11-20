@@ -22,8 +22,8 @@
 
 1. Your phone appears on the computer. Click **Connect**.
 2. The phone asks **Allow “your computer” to use your camera?** Tap **Allow**. You're only asked
-   once per computer. The phone and the computer show the same 6-digit code; if they ever differ,
-   tap **Don't allow**: something else is pretending to be your phone or computer.
+   once per computer. The phone and the computer show the same 6-digit code. Any computer can call
+   itself anything, so the code is what counts: if the codes differ, tap **Don't allow**.
 3. You see the picture on your computer. In your video call, browser or any other app that uses
    a camera, choose the camera **Beamcam**.
 
@@ -39,5 +39,7 @@ that with a phone you paired this way; other phones just appear in the list.
 
 ## Undo everything
 
-- On the phone: **⋮ → Forget allowed computers**, and **⋮ → Turn off** to stop being discoverable.
-- On the computer: **☰ → Forget Paired Phones**, and **☰ → Remove Virtual Camera**.
+- On the phone: **⋮ → Allowed computers** shows every computer you allowed. **Remove** one, or
+  **Remove all**, and they have to ask again. **⋮ → Turn off** stops the phone from being found.
+- On the computer: **☰ → Paired Phones** lets you **Forget** one phone or all of them, and
+  **☰ → Remove Virtual Camera** removes the camera.

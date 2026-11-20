@@ -10,6 +10,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings as AndroidSettings
+import android.text.format.DateFormat
+import android.text.format.DateUtils
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -23,6 +25,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -121,7 +124,10 @@ private fun App() {
     var cameraGranted by remember { mutableStateOf(context.hasCamera()) }
     var askedOnce by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
-    val forgotMessage = stringResource(R.string.forgot_computers)
+    val forgotAllMessage = stringResource(R.string.forgot_computers)
+    val forgotOneMessage = stringResource(R.string.forgot_computer)
+    val unknownComputer = stringResource(R.string.unknown_computer)
+    var allowedComputers by remember { mutableStateOf<List<AllowedComputer>?>(null) }
     val scope = rememberCoroutineScope()
 
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -151,10 +157,7 @@ private fun App() {
                 actions = {
                     if (cameraGranted) {
                         OverflowMenu(
-                            onForget = {
-                                settings.forgetComputers()
-                                scope.launch { snackbar.showSnackbar(forgotMessage) }
-                            },
+                            onAllowedComputers = { allowedComputers = settings.allowedComputers() },
                             onTurnOff = { WebcamService.stop(context) },
                             canTurnOff = state.status != WebcamStatus.Stopped,
                         )
@@ -195,6 +198,29 @@ private fun App() {
         }
     }
 
+    allowedComputers?.let { computers ->
+        fun forgot(message: String) {
+            allowedComputers = settings.allowedComputers()
+            // Only a streaming computer has to be stopped; starting the service just for this would turn Beamcam on.
+            if (state.status is WebcamStatus.Streaming) WebcamService.forgotComputers(context)
+            scope.launch { snackbar.showSnackbar(message) }
+        }
+        AllowedComputersDialog(
+            computers = computers,
+            streamingTo = (state.status as? WebcamStatus.Streaming)?.secretHash,
+            onForget = { computer ->
+                settings.forgetComputer(computer.secretHash)
+                forgot(forgotOneMessage.format(computer.name ?: unknownComputer))
+            },
+            onForgetAll = {
+                settings.forgetComputers()
+                forgot(forgotAllMessage)
+                allowedComputers = null
+            },
+            onDismiss = { allowedComputers = null },
+        )
+    }
+
     val pending = state.status as? WebcamStatus.AwaitingApproval
     if (pending != null) {
         AlertDialog(
@@ -209,13 +235,67 @@ private fun App() {
 }
 
 @Composable
-private fun OverflowMenu(onForget: () -> Unit, onTurnOff: () -> Unit, canTurnOff: Boolean) {
+private fun AllowedComputersDialog(
+    computers: List<AllowedComputer>,
+    streamingTo: String?,
+    onForget: (AllowedComputer) -> Unit,
+    onForgetAll: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.allowed_title)) },
+        text = {
+            Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
+                Text(stringResource(if (computers.isEmpty()) R.string.allowed_empty else R.string.allowed_text))
+                for (computer in computers) {
+                    Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                computer.name ?: stringResource(R.string.unknown_computer),
+                                style = MaterialTheme.typography.titleSmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            lastConnected(computer, streamingTo)?.let {
+                                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        TextButton(onClick = { onForget(computer) }) { Text(stringResource(R.string.action_remove)) }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) } },
+        dismissButton = if (computers.size > 1) {
+            { TextButton(onClick = onForgetAll) { Text(stringResource(R.string.action_remove_all)) } }
+        } else {
+            null
+        },
+    )
+}
+
+/** Dates and times in the phone's own format; relative phrases would mix its language into ours. */
+@Composable
+private fun lastConnected(computer: AllowedComputer, streamingTo: String?): String? {
+    val context = LocalContext.current
+    val millis = computer.lastConnectedMillis
+    return when {
+        computer.secretHash == streamingTo -> stringResource(R.string.allowed_streaming_now)
+        millis <= 0 -> null
+        DateUtils.isToday(millis) -> stringResource(R.string.allowed_last_connected_today, DateFormat.getTimeFormat(context).format(millis))
+        else -> stringResource(R.string.allowed_last_connected_on, DateFormat.getDateFormat(context).format(millis))
+    }
+}
+
+@Composable
+private fun OverflowMenu(onAllowedComputers: () -> Unit, onTurnOff: () -> Unit, canTurnOff: Boolean) {
     var open by remember { mutableStateOf(false) }
     IconButton(onClick = { open = true }) {
         Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.menu_more))
     }
     DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-        DropdownMenuItem(text = { Text(stringResource(R.string.menu_forget)) }, onClick = { open = false; onForget() })
+        DropdownMenuItem(text = { Text(stringResource(R.string.menu_allowed_computers)) }, onClick = { open = false; onAllowedComputers() })
         if (canTurnOff) {
             DropdownMenuItem(text = { Text(stringResource(R.string.action_turn_off)) }, onClick = { open = false; onTurnOff() })
         }

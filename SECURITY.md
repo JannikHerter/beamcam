@@ -15,7 +15,12 @@
 - Both screens show a 6-digit code on first pairing. Comparing them catches a machine in the middle
   on that first connection; it is optional so beginners are not slowed down.
 - Video over UDP is encrypted and authenticated with AES-256-GCM, with a fresh key per session.
-- “Forget allowed computers” on the phone and “Forget Paired Phones” on the computer revoke pairings.
+- “Allowed computers” on the phone and “Paired Phones” on the computer revoke pairings, one at a time
+  or all. Removing a computer that is streaming stops the stream.
+- The computer's name on the phone's prompt is whatever that computer says; only the code proves
+  anything, and the prompt says so.
+- A computer that asks to pair cannot block allowed ones: while its prompt is open, an allowed
+  computer that connects takes over and the prompt closes.
 - The phone shows a notification for as long as it streams, and Android shows its camera indicator.
 - The computer keeps its pairing secrets in `~/.config/beamcam/config.json`, readable only by
   its user. Anyone who can read that file can connect to the paired phones.

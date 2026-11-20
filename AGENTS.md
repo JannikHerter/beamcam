@@ -70,8 +70,8 @@ Before calling work done, say which of these applied:
   logic belongs there or below, not in one of them.
 - **Phone UI and notification.** The phone may be locked or the app in the background. Anything the
   user must act on (approval, stop) works from the notification too.
-- **Reverse states.** A way in needs a way out: allow has "Forget allowed computers", pairing has
-  "Forget Paired Phones", setting up the virtual camera has "Remove Virtual Camera".
+- **Reverse states.** A way in needs a way out: allow has "Allowed computers" (remove one or all),
+  pairing has "Paired Phones" (forget one or all), setting up the virtual camera has "Remove Virtual Camera".
 - **Orientation and both cameras.** Portrait, landscape, front and back all produce an upright picture.
 - **Docs.** Check whether the change makes `docs/user` guidance wrong.
 

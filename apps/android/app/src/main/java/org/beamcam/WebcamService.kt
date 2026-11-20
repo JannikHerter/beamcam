@@ -80,6 +80,13 @@ class WebcamService : Service() {
             ACTION_ALLOW -> WebcamState.respondToApproval(true)
             ACTION_DENY -> WebcamState.respondToApproval(false)
             ACTION_DISCONNECT -> activeSession?.close(Protocol.EndReason.STOPPED)
+            ACTION_FORGOT -> activeSession?.let { session ->
+                // A computer the user just removed must not keep using the camera.
+                val identity = session.identity
+                if (identity != null && !session.awaitingApproval && !settings.isAllowed(identity)) {
+                    session.close(Protocol.EndReason.STOPPED)
+                }
+            }
             ACTION_SET_FACING -> {
                 val facing = Facing.valueOf(intent.getStringExtra(EXTRA_FACING) ?: Facing.FRONT.name)
                 settings.facing = facing
@@ -162,25 +169,32 @@ class WebcamService : Service() {
     }
 
     /**
-     * Makes [session] the active one, or returns false if another computer is streaming. A paired
-     * computer that reconnects replaces its own earlier session: after a Wi-Fi drop that one is
-     * usually dead but would otherwise hold the camera until its heartbeat times out. [identity]
-     * is the hash of the computer's pairing secret, so only that computer can do this.
+     * Makes [session] the active one, or returns false if another computer holds the camera. See
+     * [decideClaim] for the rules. [identity] is the hash of the computer's pairing secret, so only that
+     * computer can replace its own session, and only allowed computers can cancel a prompt.
      */
     private suspend fun claim(session: ClientSession, identity: String?): Boolean {
-        val previous = synchronized(sessionLock) {
+        val (previous, decision) = synchronized(sessionLock) {
             val current = activeSession
-            when {
-                current == null -> null
-                identity != null && current.identity == identity -> current
-                else -> return false
-            }.also { activeSession = session }
+            val decision = decideClaim(current != null, current?.identity, current?.awaitingApproval == true, identity)
+            if (decision == Claim.BUSY) return false
+            activeSession = session
+            if (identity == null) session.awaitingApproval = true
+            current to decision
         }
         if (previous != null) {
-            Log.i(TAG, "same computer reconnected, replacing its old session")
-            // Usually its peer is gone; if not (a second app on that computer), END stops it retrying.
-            previous.close(Protocol.EndReason.REPLACED)
+            if (decision == Claim.REPLACE_OWN) {
+                // After a Wi-Fi drop the old session is usually dead but would hold the camera
+                // until its heartbeat timed out. If not (a second app on that computer), END stops it retrying.
+                Log.i(TAG, "same computer reconnected, replacing its old session")
+                previous.close(Protocol.EndReason.REPLACED)
+            } else {
+                Log.i(TAG, "an allowed computer connected, cancelling the open prompt")
+                previous.close(Protocol.EndReason.BUSY)
+            }
             withTimeoutOrNull(SESSION_HANDOVER_TIMEOUT_MS) { previous.finished.await() }
+            // The cancelled session is no longer active, so it does not reset the screen itself.
+            WebcamState.update { if (it.status is WebcamStatus.AwaitingApproval) it.copy(status = WebcamStatus.Ready) else it }
         }
         return true
     }
@@ -196,6 +210,8 @@ class WebcamService : Service() {
         private var wakeLock: PowerManager.WakeLock? = null
         private var wifiLock: WifiManager.WifiLock? = null
         @Volatile private var approval: CompletableDeferred<Boolean>? = null
+        /** Set by [claim] for a computer that asks to pair, cleared when the user answered. */
+        @Volatile var awaitingApproval = false
         @Volatile private var streaming = false
         @Volatile private var codecConfig: ByteArray? = null
         @Volatile private var waitingForKeyframe = false
@@ -258,6 +274,7 @@ class WebcamService : Service() {
                     approval = decision
                     showApprovalNotification(clientName, code)
                     val allowed = withTimeoutOrNull(APPROVAL_TIMEOUT_MS) { decision.await() }
+                    synchronized(sessionLock) { awaitingApproval = false }
                     approval = null
                     cancelApprovalNotification()
                     WebcamState.respondToApproval(false)
@@ -266,11 +283,19 @@ class WebcamService : Service() {
                         sendEnd(output)
                         return@coroutineScope
                     }
+                    // Cancelled by an allowed computer just as the user tapped Allow: pair nobody.
+                    if (closed) {
+                        sendEnd(output)
+                        return@coroutineScope
+                    }
                     newSecret = Secure.random(Secure.SECRET_BYTES)
                     identity = Secure.sha256(newSecret).toHex()
-                    settings.allow(identity!!)
                 }
-                if (closed) return@coroutineScope
+                if (closed) {
+                    sendEnd(output)
+                    return@coroutineScope
+                }
+                settings.connected(identity!!, clientName)
 
                 val offer = if (wantsUdp && socket.inetAddress is Inet4Address) openUdp(socket.inetAddress) else null
                 val accept = JSONObject()
@@ -301,7 +326,7 @@ class WebcamService : Service() {
                     }
                 }
                 streaming = true
-                WebcamState.update { it.copy(status = WebcamStatus.Streaming(clientName)) }
+                WebcamState.update { it.copy(status = WebcamStatus.Streaming(clientName, identity!!)) }
                 notifyStatus(clientName)
                 acquireLocks()
                 launch(Dispatchers.Main) { startOrientationListener() }
@@ -601,6 +626,7 @@ class WebcamService : Service() {
         private const val ACTION_ALLOW = "org.beamcam.ALLOW"
         private const val ACTION_DENY = "org.beamcam.DENY"
         private const val ACTION_DISCONNECT = "org.beamcam.DISCONNECT"
+        private const val ACTION_FORGOT = "org.beamcam.FORGOT"
         private const val ACTION_SET_FACING = "org.beamcam.SET_FACING"
         private const val EXTRA_FACING = "facing"
 
@@ -612,6 +638,10 @@ class WebcamService : Service() {
 
         fun disconnect(context: Context) =
             context.startService(Intent(context, WebcamService::class.java).setAction(ACTION_DISCONNECT))
+
+        /** Tells a running service that computers were removed; it stops one that is streaming. */
+        fun forgotComputers(context: Context) =
+            context.startService(Intent(context, WebcamService::class.java).setAction(ACTION_FORGOT))
 
         fun setFacing(context: Context, facing: Facing) = context.startService(
             Intent(context, WebcamService::class.java).setAction(ACTION_SET_FACING).putExtra(EXTRA_FACING, facing.name),

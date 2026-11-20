@@ -62,7 +62,7 @@ FORGOTTEN = "unknown"
 END_MESSAGES = {
     "denied": "The phone did not allow this computer.",
     "timeout": "Nobody tapped Allow on the phone in time.",
-    "busy": "The phone is already streaming to another computer.",
+    "busy": "The phone is being used by another computer.",
     "stopped": "Streaming was stopped on the phone.",
     "camera": "The phone’s camera stopped working.",
     "replaced": "Another Beamcam on this computer took over the phone.",
@@ -105,6 +105,7 @@ class PairingStore(Interface):
 
     def secret_for(self, fingerprint: str) -> bytes | None: ...
     def pair(self, fingerprint: str, secret: bytes, phone_id: str, name: str) -> None: ...
+    def connected(self, fingerprint: str, name: str) -> None: ...
     def forget(self, fingerprint: str) -> None: ...
 
 
@@ -281,6 +282,8 @@ class Session:
                 if not isinstance(new_secret, str) or len(new_secret) != 64:
                     raise protocol.ProtocolError("phone accepted without pairing")
                 self._pairings.pair(fingerprint, bytes.fromhex(new_secret), info.device_id, info.device_name)
+            else:
+                self._pairings.connected(fingerprint, info.device_name)
             self._listener.on_accept(info)
             self._last_video = time.monotonic()
             try:

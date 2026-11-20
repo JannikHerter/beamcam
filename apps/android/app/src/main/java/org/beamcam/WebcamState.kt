@@ -11,7 +11,8 @@ sealed interface WebcamStatus {
     data object Ready : WebcamStatus
     /** [code] is the pairing code; the computer shows the same one unless someone is in between. */
     data class AwaitingApproval(val computerName: String, val code: String) : WebcamStatus
-    data class Streaming(val computerName: String) : WebcamStatus
+    /** [secretHash] identifies the computer among the allowed ones. */
+    data class Streaming(val computerName: String, val secretHash: String) : WebcamStatus
 }
 
 data class WebcamUiState(

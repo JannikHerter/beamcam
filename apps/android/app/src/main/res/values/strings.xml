@@ -27,12 +27,22 @@
     <string name="action_turn_off">Turn off</string>
 
     <string name="approval_title">Allow “%1$s” to use your camera?</string>
-    <string name="approval_text">Only allow computers you own. Your computer shows the same code: %1$s</string>
+    <string name="approval_text">Any computer can use any name, so check the code: tap Allow only if your computer shows %1$s.</string>
     <string name="action_allow">Allow</string>
     <string name="action_deny">Don’t allow</string>
 
     <string name="menu_more">More</string>
-    <string name="menu_forget">Forget allowed computers</string>
+    <string name="menu_allowed_computers">Allowed computers</string>
+    <string name="allowed_title">Allowed computers</string>
+    <string name="allowed_text">These computers can use your camera without asking. Remove one to make it ask again.</string>
+    <string name="allowed_empty">No computers yet. When you tap Allow on a computer’s request, it shows up here.</string>
+    <string name="allowed_streaming_now">Using your camera now</string>
+    <string name="allowed_last_connected_today">Last connected today at %1$s</string>
+    <string name="allowed_last_connected_on">Last connected on %1$s</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_remove_all">Remove all</string>
+    <string name="action_done">Done</string>
+    <string name="forgot_computer">“%1$s” will have to ask again next time.</string>
     <string name="forgot_computers">Computers will have to ask again next time.</string>
     <string name="error_camera">The camera stopped: %1$s</string>
 
