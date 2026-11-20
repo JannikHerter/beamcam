@@ -18,7 +18,10 @@ def encoded_frames(width, height, count=30):
     """Access units like the phone sends: Annex-B, SPS/PPS in front of each keyframe."""
     encoder = "x264enc tune=zerolatency key-int-max=15" if Gst.ElementFactory.find("x264enc") else "openh264enc"
     pipeline = Gst.parse_launch(
-        f"videotestsrc num-buffers={count} pattern=smpte ! video/x-raw,width={width},height={height},framerate=30/1 "
+        # 8-bit 4:2:0 like a phone's encoder. Left open, newer x264 picks 10-bit 4:4:4, and
+        # GStreamer 1.28.7 pads that with pink instead of black (not something phones send).
+        f"videotestsrc num-buffers={count} pattern=smpte "
+        f"! video/x-raw,format=I420,width={width},height={height},framerate=30/1 "
         f"! {encoder} ! h264parse config-interval=-1 ! video/x-h264,stream-format=byte-stream,alignment=au "
         "! appsink name=out sync=false"
     )
