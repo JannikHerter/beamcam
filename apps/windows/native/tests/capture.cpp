@@ -75,7 +75,8 @@ int wmain(int argc, wchar_t** argv) {
         UINT32 length = 0;
         if (SUCCEEDED(devices[i]->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_FRIENDLY_NAME, &friendly, &length))) {
             std::wprintf(L"camera: %s\n", friendly);
-            if (!list && !source && name == friendly) {
+            // Windows appends " (Windows Virtual Camera)" to virtual cameras' names.
+            if (!list && !source && std::wstring(friendly).rfind(name, 0) == 0) {
                 hr = devices[i]->ActivateObject(IID_PPV_ARGS(&source));
                 if (FAILED(hr)) return Fail("ActivateObject", hr);
             }

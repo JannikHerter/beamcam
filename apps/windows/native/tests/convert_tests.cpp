@@ -126,7 +126,35 @@ static void TestColors() {
     CHECK(back[2] > 240 && back[1] < 15 && back[0] < 15);
 }
 
+// Phones send full-range video (0-255); the camera's output is video range (16-235), so black
+// stays black and white stays white in other apps, and the bars match the picture's black.
+static void TestFullRange() {
+    bc::Nv12Frame src(4, 2);
+    const uint8_t luma[] = {0, 128, 255, 10, 0, 128, 255, 10};
+    for (int i = 0; i < 8; i++) src.y()[i] = luma[i];
+    const uint8_t uv[] = {0, 255, 128, 128};
+    for (int i = 0; i < 4; i++) src.uv()[i] = uv[i];
+    bc::Nv12Frame out(4, 2);
+    bc::RotateInto(src.view(), 0, out, true);
+    CHECK(out.y()[0] == 16 && out.y()[2] == 235 && out.y()[1] == 126);
+    CHECK(out.uv()[0] == 16 && out.uv()[1] == 240 && out.uv()[2] == 128);
+    bc::Nv12Frame same(4, 2);
+    bc::RotateInto(src.view(), 0, same, false);
+    CHECK(same.y()[0] == 0 && same.y()[2] == 255);
+    // Turned: still converted, and the black bars are video-range black.
+    bc::Nv12Frame wide(8, 2);
+    bc::RotateInto(src.view(), 90, wide, true);
+    CHECK(wide.y()[0] == 16 && wide.uv()[0] == 128);
+    uint8_t lo = 255, hi = 0;
+    for (int i = 0; i < 16; i++) {
+        lo = std::min(lo, wide.y()[i]);
+        hi = std::max(hi, wide.y()[i]);
+    }
+    CHECK(lo >= 16 && hi <= 235);
+}
+
 int main() {
+    TestFullRange();
     TestFitRect();
     TestRotations();
     TestLetterbox();

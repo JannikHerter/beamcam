@@ -74,15 +74,31 @@ inline void Sample(const uint8_t* plane, int stride, int width, int height, int6
     }
 }
 
+// Full range (0-255) to video range: Y to 16-235, chroma to 16-240 around 128.
+struct RangeTables {
+    uint8_t luma[256];
+    uint8_t chroma[256];
+    RangeTables() {
+        for (int v = 0; v < 256; v++) {
+            luma[v] = static_cast<uint8_t>(16 + (v * 219 + 127) / 255);
+            chroma[v] = static_cast<uint8_t>(128 + ((v - 128) * 224 + (v >= 128 ? 127 : -127)) / 255);
+        }
+    }
+};
+const RangeTables kRange;
+
 template <int channels>
 void WalkPlane(const uint8_t* src, int srcStride, int srcWidth, int srcHeight, int rotation, uint8_t* dst, int dstStride,
-               const Rect& fit) {
+               const Rect& fit, const uint8_t* table) {
     const Walk w = MakeWalk(rotation, srcWidth, srcHeight, fit.width, fit.height);
     for (int j = 0; j < fit.height; j++) {
         int64_t fx = w.sx + w.xdy * j, fy = w.sy + w.ydy * j;
         uint8_t* row = dst + static_cast<size_t>(fit.y + j) * dstStride + static_cast<size_t>(fit.x) * channels;
         for (int i = 0; i < fit.width; i++) {
-            Sample<channels>(src, srcStride, srcWidth, srcHeight, fx, fy, row + i * channels);
+            uint8_t* pixel = row + i * channels;
+            Sample<channels>(src, srcStride, srcWidth, srcHeight, fx, fy, pixel);
+            if (table)
+                for (int c = 0; c < channels; c++) pixel[c] = table[pixel[c]];
             fx += w.xdx;
             fy += w.ydx;
         }
@@ -113,19 +129,33 @@ void FillBlack(Nv12Frame& frame) {
     std::memset(frame.uv(), kBlackUV, static_cast<size_t>(frame.width) * frame.height / 2);
 }
 
-void RotateInto(const Nv12View& src, int rotation, Nv12Frame& out) {
-    const Rect fit = FitRect(src.width, src.height, rotation, out.width, out.height);
-    if (fit.width != out.width || fit.height != out.height) FillBlack(out);
-    if (rotation == 0 && fit.width == src.width && fit.height == src.height && fit.x == 0 && fit.y == 0) {
-        for (int j = 0; j < src.height; j++)
-            std::memcpy(out.y() + static_cast<size_t>(j) * out.width, src.y + static_cast<size_t>(j) * src.yStride, src.width);
-        for (int j = 0; j < src.height / 2; j++)
-            std::memcpy(out.uv() + static_cast<size_t>(j) * out.width, src.uv + static_cast<size_t>(j) * src.uvStride, src.width);
+namespace {
+
+void CopyRow(uint8_t* dst, const uint8_t* src, int count, const uint8_t* table) {
+    if (!table) {
+        std::memcpy(dst, src, count);
         return;
     }
-    WalkPlane<1>(src.y, src.yStride, src.width, src.height, rotation, out.y(), out.width, fit);
-    const Rect chroma{fit.x / 2, fit.y / 2, fit.width / 2, fit.height / 2};
-    WalkPlane<2>(src.uv, src.uvStride, src.width / 2, src.height / 2, rotation, out.uv(), out.width, chroma);
+    for (int i = 0; i < count; i++) dst[i] = table[src[i]];
+}
+
+}  // namespace
+
+void RotateInto(const Nv12View& src, int rotation, Nv12Frame& out, bool fullRange) {
+    const Rect fit = FitRect(src.width, src.height, rotation, out.width, out.height);
+    if (fit.width != out.width || fit.height != out.height) FillBlack(out);
+    const uint8_t* luma = fullRange ? kRange.luma : nullptr;
+    const uint8_t* chroma = fullRange ? kRange.chroma : nullptr;
+    if (rotation == 0 && fit.width == src.width && fit.height == src.height && fit.x == 0 && fit.y == 0) {
+        for (int j = 0; j < src.height; j++)
+            CopyRow(out.y() + static_cast<size_t>(j) * out.width, src.y + static_cast<size_t>(j) * src.yStride, src.width, luma);
+        for (int j = 0; j < src.height / 2; j++)
+            CopyRow(out.uv() + static_cast<size_t>(j) * out.width, src.uv + static_cast<size_t>(j) * src.uvStride, src.width, chroma);
+        return;
+    }
+    WalkPlane<1>(src.y, src.yStride, src.width, src.height, rotation, out.y(), out.width, fit, luma);
+    const Rect half{fit.x / 2, fit.y / 2, fit.width / 2, fit.height / 2};
+    WalkPlane<2>(src.uv, src.uvStride, src.width / 2, src.height / 2, rotation, out.uv(), out.width, half, chroma);
 }
 
 namespace {

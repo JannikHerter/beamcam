@@ -172,6 +172,9 @@ public:
         MFSetAttributeRatio(type.Get(), MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
         type->SetUINT32(MF_MT_AVG_BITRATE, kFrameBytes * 8 * kCameraFps);
         type->SetUINT32(MF_MT_SAMPLE_SIZE, kFrameBytes);
+        // What the app sends: BT.601 colors in video range, whatever range the phone used.
+        type->SetUINT32(MF_MT_VIDEO_NOMINAL_RANGE, MFNominalRange_16_235);
+        type->SetUINT32(MF_MT_YUV_MATRIX, MFVideoTransferMatrix_BT601);
         IMFMediaType* types[] = {type.Get()};
         hr = MFCreateStreamDescriptor(id, 1, types, &descriptor_);
         if (FAILED(hr)) return hr;

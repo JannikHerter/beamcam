@@ -43,6 +43,8 @@ struct BcVideo {
     UINT32 frameWidth = 0, frameHeight = 0, displayWidth = 0, displayHeight = 0;
     LONG stride = 0;
     DWORD outputSize = 0;
+    // Phones' encoders mark their video as full range (0-255) in the stream; the decoder passes that on.
+    bool fullRange = false;
     bool providesSamples = false;
 
     bc::Nv12Frame output{bc::kCameraWidth, bc::kCameraHeight};
@@ -105,6 +107,9 @@ struct BcVideo {
                 displayWidth = static_cast<UINT32>(area.Area.cx);
                 displayHeight = static_cast<UINT32>(area.Area.cy);
             }
+            UINT32 range = MFNominalRange_Unknown;
+            fullRange = SUCCEEDED(type->GetUINT32(MF_MT_VIDEO_NOMINAL_RANGE, &range)) && range == MFNominalRange_0_255;
+            bc::Trace("decoder output %ux%u, nominal range %u", frameWidth, frameHeight, range);
             UINT32 defaultStride = 0;
             stride = SUCCEEDED(type->GetUINT32(MF_MT_DEFAULT_STRIDE, &defaultStride)) ? static_cast<LONG>(defaultStride)
                                                                                      : static_cast<LONG>(frameWidth);
@@ -186,7 +191,7 @@ struct BcVideo {
         }
         const bc::Nv12View view{data, static_cast<int>(pitch), data + static_cast<size_t>(pitch) * frameHeight, static_cast<int>(pitch),
                                 static_cast<int>(displayWidth) & ~1, static_cast<int>(displayHeight) & ~1};
-        bc::RotateInto(view, rotation, output);
+        bc::RotateInto(view, rotation, output, fullRange);
         if (locked2d)
             planes->Unlock2D();
         else

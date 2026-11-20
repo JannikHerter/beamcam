@@ -44,7 +44,9 @@ Rect FitRect(int srcWidth, int srcHeight, int rotation, int outWidth, int outHei
 
 // Turns src clockwise by `rotation` (0, 90, 180, 270) and scales it into out with black borders.
 // The output size never changes, because video apps break when a camera's format changes mid-stream.
-void RotateInto(const Nv12View& src, int rotation, Nv12Frame& out);
+// The output is always video range (Y 16-235); `fullRange` says the source uses 0-255, as phones'
+// encoders usually do.
+void RotateInto(const Nv12View& src, int rotation, Nv12Frame& out, bool fullRange = false);
 
 void FillBlack(Nv12Frame& frame);
 
