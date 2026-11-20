@@ -98,8 +98,8 @@ def _stream(args: argparse.Namespace) -> int:
         return False
 
     class Events:
-        def on_pending(self) -> None:
-            print("Waiting for you to tap Allow on the phone…", flush=True)
+        def on_pending(self, code: str) -> None:
+            print(f"Waiting for you to tap Allow on the phone. It shows the code {code}.", flush=True)
 
         def on_streaming(self, info, pipeline) -> None:
             print(f"Streaming from {info.device_name} ({info.width}x{info.height}) to {device or 'nowhere'}", flush=True)
@@ -119,7 +119,9 @@ def _stream(args: argparse.Namespace) -> int:
             loop.quit()
 
     controller = Controller(
-        host, port, config.client_id, computer_name(), device, Events(),
+        host, port, computer_name(), device, Events(), config,
+        # Running the command is the user asking to connect, so a new phone may be paired.
+        allow_pairing=True,
         snapshots=bool(args.snapshot), transports=("tcp",) if args.tcp_only else ("udp", "tcp"),
     )
 

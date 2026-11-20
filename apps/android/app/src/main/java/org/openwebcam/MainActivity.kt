@@ -201,7 +201,7 @@ private fun App() {
             onDismissRequest = {},
             icon = { Icon(Icons.Outlined.Videocam, contentDescription = null) },
             title = { Text(stringResource(R.string.approval_title, pending.computerName), textAlign = TextAlign.Center) },
-            text = { Text(stringResource(R.string.approval_text)) },
+            text = { Text(stringResource(R.string.approval_text, pending.code)) },
             confirmButton = { Button(onClick = { WebcamState.respondToApproval(true) }) { Text(stringResource(R.string.action_allow)) } },
             dismissButton = { TextButton(onClick = { WebcamState.respondToApproval(false) }) { Text(stringResource(R.string.action_deny)) } },
         )

@@ -8,7 +8,7 @@ import java.io.IOException
 
 /** Wire format shared with the Linux app. Spec: docs/internals/protocol.md */
 object Protocol {
-    const val VERSION = 1
+    const val VERSION = 2
     const val DEFAULT_PORT = 47800
     const val SERVICE_TYPE = "_openwebcam._tcp"
     const val MAX_PAYLOAD = 8 * 1024 * 1024
@@ -32,6 +32,7 @@ object Protocol {
         const val PROTOCOL = "protocol"
         const val CAMERA = "camera"
         const val REPLACED = "replaced"
+        const val UNKNOWN = "unknown"
     }
 }
 
@@ -70,8 +71,9 @@ fun encodeVideoPayload(ptsMicros: Long, flags: Int, data: ByteArray, offset: Int
 }
 
 /**
- * UDP video (optional, negotiated in HELLO/ACCEPT). Each frame is split into datagrams of at most
- * [MAX_DATAGRAM] bytes: u8 type | u32 frame id | u16 index | u16 count | u8 flags | u64 pts µs | data.
+ * UDP video (optional, negotiated in HELLO/ACCEPT). These are the plaintexts inside sealed
+ * datagrams ([Sealer]). Each frame is split into pieces of at most [MAX_PLAINTEXT] bytes:
+ * u8 type | u32 frame id | u16 index | u16 count | u8 flags | u64 pts µs | data.
  */
 object Udp {
     const val VIDEO: Int = 0x01
@@ -80,13 +82,13 @@ object Udp {
     const val NACK_WHOLE_FRAME = 0xFFFF
     const val HEADER = 18
     const val MAX_DATAGRAM = 1400
-    const val TOKEN_BYTES = 16
-    const val FEEDBACK_BYTES = 1 + TOKEN_BYTES + 1 + 4 + 4
+    const val MAX_PLAINTEXT = MAX_DATAGRAM - Sealer.OVERHEAD
+    const val FEEDBACK_BYTES = 1 + 1 + 4 + 4
     const val FEEDBACK_KEYFRAME = 0x01
 }
 
-fun fragmentFrame(frameId: Long, ptsMicros: Long, flags: Int, data: ByteArray, maxDatagram: Int = Udp.MAX_DATAGRAM): List<ByteArray> {
-    val chunk = maxDatagram - Udp.HEADER
+fun fragmentFrame(frameId: Long, ptsMicros: Long, flags: Int, data: ByteArray, maxPlaintext: Int = Udp.MAX_PLAINTEXT): List<ByteArray> {
+    val chunk = maxPlaintext - Udp.HEADER
     val count = maxOf(1, (data.size + chunk - 1) / chunk)
     require(count <= 0xFFFF) { "frame too large" }
     return List(count) { index ->
@@ -104,34 +106,27 @@ fun fragmentFrame(frameId: Long, ptsMicros: Long, flags: Int, data: ByteArray, m
     }
 }
 
-class Feedback(val token: ByteArray, val flags: Int, val lastFrame: Long, val lost: Long) {
+class Feedback(val flags: Int, val lastFrame: Long, val lost: Long) {
     val wantsKeyframe get() = flags and Udp.FEEDBACK_KEYFRAME != 0
 }
 
-/**
- * NACK: u8 type | 16 B token | u8 count | count x (u32 frame id, u16 index). Returns the token and
- * the requested pieces, or null if malformed. Index [Udp.NACK_WHOLE_FRAME] means every piece.
- */
-fun parseNack(data: ByteArray, length: Int): Pair<ByteArray, List<Pair<Long, Int>>>? {
-    val header = 1 + Udp.TOKEN_BYTES + 1
-    if (length < header || data[0].toInt() and 0xFF != Udp.NACK) return null
-    val buffer = java.nio.ByteBuffer.wrap(data, 0, length)
+/** NACK: u8 type | u8 count | count x (u32 frame id, u16 index). Null if malformed. */
+fun parseNack(data: ByteArray): List<Pair<Long, Int>>? {
+    if (data.size < 2 || data[0].toInt() and 0xFF != Udp.NACK) return null
+    val buffer = java.nio.ByteBuffer.wrap(data)
     buffer.get()
-    val token = ByteArray(Udp.TOKEN_BYTES).also { buffer.get(it) }
     val count = buffer.get().toInt() and 0xFF
-    if (length < header + count * 6) return null
-    val entries = List(count) { (buffer.getInt().toLong() and 0xFFFFFFFFL) to (buffer.getShort().toInt() and 0xFFFF) }
-    return token to entries
+    if (data.size < 2 + count * 6) return null
+    return List(count) { (buffer.getInt().toLong() and 0xFFFFFFFFL) to (buffer.getShort().toInt() and 0xFFFF) }
 }
 
-/** u8 type | 16 B token | u8 flags | u32 last frame id | u32 frames lost. Null if malformed. */
-fun parseFeedback(data: ByteArray, length: Int): Feedback? {
-    if (length < Udp.FEEDBACK_BYTES || data[0].toInt() and 0xFF != Udp.FEEDBACK) return null
-    val buffer = java.nio.ByteBuffer.wrap(data, 0, length)
+/** FEEDBACK: u8 type | u8 flags | u32 last frame id | u32 losses. Null if malformed. */
+fun parseFeedback(data: ByteArray): Feedback? {
+    if (data.size < Udp.FEEDBACK_BYTES || data[0].toInt() and 0xFF != Udp.FEEDBACK) return null
+    val buffer = java.nio.ByteBuffer.wrap(data)
     buffer.get()
-    val token = ByteArray(Udp.TOKEN_BYTES).also { buffer.get(it) }
     val flags = buffer.get().toInt() and 0xFF
     val last = buffer.getInt().toLong() and 0xFFFFFFFFL
     val lost = buffer.getInt().toLong() and 0xFFFFFFFFL
-    return Feedback(token, flags, last, lost)
+    return Feedback(flags, last, lost)
 }

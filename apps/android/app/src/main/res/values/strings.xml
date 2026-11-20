@@ -27,7 +27,7 @@
     <string name="action_turn_off">Turn off</string>
 
     <string name="approval_title">Allow “%1$s” to use your camera?</string>
-    <string name="approval_text">Only allow computers you own. You’ll only be asked once per computer.</string>
+    <string name="approval_text">Only allow computers you own. Your computer shows the same code: %1$s</string>
     <string name="action_allow">Allow</string>
     <string name="action_deny">Don’t allow</string>
 

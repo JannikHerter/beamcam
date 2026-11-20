@@ -44,6 +44,8 @@ done
 adb shell 'cat /proc/net/tcp /proc/net/tcp6' | grep -qi ":BAB8 .* 0A " || fail "the app is not listening on port 47800"
 
 export PYTHONPATH="$ROOT/apps/linux/src"
+# Pairings with emulators must not end up in the developer's real config.
+export XDG_CONFIG_HOME="${E2E_CONFIG:-$OUT/config}"
 cd "$OUT"
 
 step "Decoding 150 frames (tap Allow on the emulator if it asks)"

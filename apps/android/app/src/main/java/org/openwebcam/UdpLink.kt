@@ -10,6 +10,7 @@ import java.net.SocketAddress
 
 /**
  * Video over UDP to the address the computer's first FEEDBACK came from (so firewalls see replies).
+ * Every datagram is sealed with the session key ([Sealer]); anything else is dropped unread.
  *
  * A failed send is a lost datagram, which UDP has to survive anyway: it never ends the session.
  * When Wi-Fi drops, sends fail with ENETUNREACH until it is back; whether the computer is gone is
@@ -17,7 +18,8 @@ import java.net.SocketAddress
  */
 class UdpLink(
     val socket: DatagramSocket,
-    val token: ByteArray,
+    /** This session's key, sent to the computer inside TLS. */
+    val key: ByteArray,
     private val peer: InetAddress,
     private val transmit: (DatagramPacket) -> Unit = socket::send,
     private val clock: () -> Long = SystemClock::elapsedRealtime,
@@ -30,8 +32,11 @@ class UdpLink(
     /** Datagrams that could not be sent, for logs and tests. */
     @Volatile var failedSends = 0L
         private set
+    private val sealer = Sealer.forPhone(key)
     private var frameId = 0L
     private var lastKeyframeRequest = 0L
+    // Only fresh control datagrams count, so replayed heartbeats cannot keep a session alive.
+    private var lastControlCounter = -1L
     // Recently sent datagrams by frame id, for resending what the computer reports missing.
     private val history = object : LinkedHashMap<Long, List<ByteArray>>() {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, List<ByteArray>>) = size > RESEND_HISTORY_FRAMES
@@ -55,8 +60,9 @@ class UdpLink(
     }
 
     private fun trySend(part: ByteArray, to: SocketAddress) {
+        val sealed = sealer.seal(part)
         try {
-            transmit(DatagramPacket(part, part.size, to))
+            transmit(DatagramPacket(sealed, sealed.size, to))
         } catch (e: IOException) {
             failedSends++
         }
@@ -76,13 +82,15 @@ class UdpLink(
                 continue
             }
             if (packet.address != peer) continue
-            val nack = parseNack(buffer, packet.length)
+            val (counter, plaintext) = sealer.open(buffer, packet.length) ?: continue
+            if (counter <= lastControlCounter) continue
+            lastControlCounter = counter
+            val nack = parseNack(plaintext)
             if (nack != null) {
-                if (nack.first.contentEquals(token)) resend(nack.second)
+                resend(nack)
                 continue
             }
-            val feedback = parseFeedback(buffer, packet.length) ?: continue
-            if (!feedback.token.contentEquals(token)) continue
+            val feedback = parseFeedback(plaintext) ?: continue
             val now = clock()
             lastFeedbackAt = now
             if (target == null) {

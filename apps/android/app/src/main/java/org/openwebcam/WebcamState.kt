@@ -9,7 +9,8 @@ import kotlinx.coroutines.flow.update
 sealed interface WebcamStatus {
     data object Stopped : WebcamStatus
     data object Ready : WebcamStatus
-    data class AwaitingApproval(val computerName: String) : WebcamStatus
+    /** [code] is the pairing code; the computer shows the same one unless someone is in between. */
+    data class AwaitingApproval(val computerName: String, val code: String) : WebcamStatus
     data class Streaming(val computerName: String) : WebcamStatus
 }
 
@@ -33,10 +34,10 @@ object WebcamState {
 
     internal fun update(transform: (WebcamUiState) -> WebcamUiState) = mutable.update(transform)
 
-    internal fun beginApproval(computerName: String): CompletableDeferred<Boolean> {
+    internal fun beginApproval(computerName: String, code: String): CompletableDeferred<Boolean> {
         val deferred = CompletableDeferred<Boolean>()
         pendingApproval = deferred
-        update { it.copy(status = WebcamStatus.AwaitingApproval(computerName)) }
+        update { it.copy(status = WebcamStatus.AwaitingApproval(computerName, code)) }
         return deferred
     }
 

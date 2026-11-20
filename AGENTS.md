@@ -34,7 +34,8 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
 - **computer** means the Linux machine running `apps/linux`. It is the client.
 - **virtual camera** means the v4l2loopback device other apps read from.
 - **session** means one TCP connection from computer to phone, from HELLO to END.
-- **allowed computer** means one the phone remembers; it does not ask again.
+- **allowed computer** means one the phone remembers (by the hash of its pairing secret); it does not ask again.
+- **paired phone** means one whose certificate fingerprint the computer pinned; only those are auto-connected.
 
 ## Where code lives
 
@@ -42,10 +43,12 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
   - `WebcamService.kt`: foreground service. Server socket, mDNS advertisement, sessions, approval.
   - `UdpLink.kt`: UDP video, resends and keyframe requests for one session. Send errors never end it.
   - `CameraStreamer.kt`: Camera2 into MediaCodec's input surface. No pixels pass through app code.
+  - `Identity.kt`: the phone's TLS key in the Android keystore. `Secure.kt`: pairing code and UDP sealing.
   - `Protocol.kt`, `Orientation.kt`: wire format and rotation math (unit tested).
   - `MainActivity.kt`: Compose UI. It only reads `WebcamState` and sends intents to the service.
 - `apps/linux/src/openwebcam/`
-  - `protocol.py` mirrors `Protocol.kt`. `client.py` is one session (TCP control, UDP video).
+  - `protocol.py` mirrors `Protocol.kt`, `secure.py` mirrors `Secure.kt`. `client.py` is one session
+    (TLS control, sealed UDP video); `config.py` keeps the pairings.
     `reassembly.py` rebuilds frames from UDP datagrams and decides what to NACK. `mdns.py` finds phones.
   - `pipeline.py`: GStreamer decode, rotate, fixed-size output, v4l2sink. `controller.py` joins session and pipeline.
   - `reconnect.py` decides whether and where to reconnect (follows the phone's id through mDNS).
@@ -65,8 +68,8 @@ Before calling work done, say which of these applied:
   logic belongs there or below, not in one of them.
 - **Phone UI and notification.** The phone may be locked or the app in the background. Anything the
   user must act on (approval, stop) works from the notification too.
-- **Reverse states.** A way in needs a way out: allow has "Forget allowed computers", setting up
-  the virtual camera has "Remove Virtual Camera".
+- **Reverse states.** A way in needs a way out: allow has "Forget allowed computers", pairing has
+  "Forget Paired Phones", setting up the virtual camera has "Remove Virtual Camera".
 - **Orientation and both cameras.** Portrait, landscape, front and back all produce an upright picture.
 - **Docs.** Check whether the change makes `docs/user` guidance wrong.
 
@@ -86,7 +89,9 @@ Before calling work done, say which of these applied:
 - Keep the two apps dumb about each other: the protocol doc is the only shared truth.
 - Complexity belongs at the edges (camera, codec, sockets, kernel module). UI code only renders state.
 - No new runtime dependencies on Linux beyond what distros ship (PyGObject, GTK 4, libadwaita,
-  GStreamer). On Android, prefer the platform over libraries.
+  GStreamer, python-cryptography for AES-GCM). On Android, prefer the platform over libraries.
+- Never roll your own crypto. TLS comes from the platform (Conscrypt, Python `ssl`), AES-GCM from
+  JCA and python-cryptography; pairing rules live in `docs/internals/protocol.md`.
 - Default to no comment. Write one only for a constraint, an external quirk or an invariant the code can't show.
 - User-facing text is short, friendly and tells people what to do. Use “Allow”, not “Authorize”;
   “Wi-Fi”, not “LAN”. Don't name other products (say “your video call”, not a brand); code

@@ -46,7 +46,7 @@ import java.net.DatagramSocket
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.InetSocketAddress
-import java.security.SecureRandom
+import javax.net.ssl.SSLServerSocket
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
@@ -109,7 +109,11 @@ class WebcamService : Service() {
         // The "camera" service type exists from Android 11; older versions reject unknown types.
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA else 0
         ServiceCompat.startForeground(this, NOTIFICATION_STATUS, statusNotification(null), type)
-        val socket = ServerSocket().apply { reuseAddress = true }
+        // Everything on TCP is TLS; the phone proves its identity with its keystore key (Identity).
+        val socket = (Identity.sslContext().serverSocketFactory.createServerSocket() as SSLServerSocket).apply {
+            reuseAddress = true
+            enabledProtocols = supportedProtocols.filter { it == "TLSv1.3" || it == "TLSv1.2" }.toTypedArray()
+        }
         try {
             socket.bind(InetSocketAddress(Protocol.DEFAULT_PORT))
         } catch (e: IOException) {
@@ -158,16 +162,17 @@ class WebcamService : Service() {
     }
 
     /**
-     * Makes [session] the active one, or returns false if another computer is streaming. A computer
-     * that reconnects replaces its own earlier session: after a Wi-Fi drop that one is usually
-     * dead but would otherwise hold the camera until its heartbeat times out.
+     * Makes [session] the active one, or returns false if another computer is streaming. A paired
+     * computer that reconnects replaces its own earlier session: after a Wi-Fi drop that one is
+     * usually dead but would otherwise hold the camera until its heartbeat times out. [identity]
+     * is the hash of the computer's pairing secret, so only that computer can do this.
      */
-    private suspend fun claim(session: ClientSession, clientId: String): Boolean {
+    private suspend fun claim(session: ClientSession, identity: String?): Boolean {
         val previous = synchronized(sessionLock) {
             val current = activeSession
             when {
                 current == null -> null
-                clientId.isNotBlank() && current.clientId == clientId -> current
+                identity != null && current.identity == identity -> current
                 else -> return false
             }.also { activeSession = session }
         }
@@ -200,7 +205,8 @@ class WebcamService : Service() {
         @Volatile private var closed = false
         @Volatile private var udpLink: UdpLink? = null
         private var udpWatchdog: Job? = null
-        @Volatile var clientId: String? = null
+        /** SHA-256 (hex) of the computer's pairing secret, once known. */
+        @Volatile var identity: String? = null
             private set
         /** Completed once the camera and sockets are released. */
         val finished = CompletableDeferred<Unit>()
@@ -225,10 +231,17 @@ class WebcamService : Service() {
                 }
                 val transports = json.optJSONArray("transports")
                 val wantsUdp = transports != null && (0 until transports.length()).any { transports.optString(it) == "udp" }
-                val clientId = json.optString("clientId")
-                this@ClientSession.clientId = clientId
                 val clientName = json.optString("clientName").ifBlank { getString(R.string.unknown_computer) }.take(64)
-                if (!claim(this@ClientSession, clientId)) {
+                val presented = Secure.fromHex(json.optString("secret"))?.takeIf { it.size == Secure.SECRET_BYTES }
+                identity = presented?.let { Secure.sha256(it).toHex() }
+                if (identity != null && !settings.isAllowed(identity!!)) {
+                    // This phone forgot that computer. Say so instead of prompting: the computer
+                    // only asks again when its user clicks Connect.
+                    output.writeJson(Protocol.END, JSONObject().put("reason", Protocol.EndReason.UNKNOWN))
+                    output.flush()
+                    return@coroutineScope
+                }
+                if (!claim(this@ClientSession, identity)) {
                     output.writeJson(Protocol.END, JSONObject().put("reason", Protocol.EndReason.BUSY))
                     output.flush()
                     return@coroutineScope
@@ -236,12 +249,14 @@ class WebcamService : Service() {
                 socket.soTimeout = 0
                 launch { readLoop(input) }
 
-                if (clientId.isBlank() || !settings.isTrusted(clientId)) {
+                var newSecret: ByteArray? = null
+                if (identity == null) {
                     output.writeJson(Protocol.PENDING, JSONObject())
                     output.flush()
-                    val decision = WebcamState.beginApproval(clientName)
+                    val code = Secure.pairingCode(Identity.fingerprint())
+                    val decision = WebcamState.beginApproval(clientName, code)
                     approval = decision
-                    showApprovalNotification(clientName)
+                    showApprovalNotification(clientName, code)
                     val allowed = withTimeoutOrNull(APPROVAL_TIMEOUT_MS) { decision.await() }
                     approval = null
                     cancelApprovalNotification()
@@ -251,7 +266,9 @@ class WebcamService : Service() {
                         sendEnd(output)
                         return@coroutineScope
                     }
-                    if (clientId.isNotBlank()) settings.trust(clientId)
+                    newSecret = Secure.random(Secure.SECRET_BYTES)
+                    identity = Secure.sha256(newSecret).toHex()
+                    settings.allow(identity!!)
                 }
                 if (closed) return@coroutineScope
 
@@ -265,8 +282,9 @@ class WebcamService : Service() {
                     .put("height", FORMAT.height)
                     .put("fps", FORMAT.fps)
                     .put("facing", settings.facing.wire)
+                if (newSecret != null) accept.put("secret", newSecret.toHex())
                 if (offer != null) {
-                    accept.put("udpPort", offer.socket.localPort).put("udpToken", offer.token.toHex())
+                    accept.put("udpPort", offer.socket.localPort).put("udpKey", offer.key.toHex())
                 }
                 output.writeJson(Protocol.ACCEPT, accept)
                 output.flush()
@@ -319,7 +337,7 @@ class WebcamService : Service() {
 
         private fun openUdp(peer: InetAddress): UdpLink? = runCatching {
             val socket = DatagramSocket(0).apply { sendBufferSize = UDP_SEND_BUFFER_BYTES }
-            UdpLink(socket, ByteArray(Udp.TOKEN_BYTES).also { SecureRandom().nextBytes(it) }, peer)
+            UdpLink(socket, Secure.random(32), peer)
         }.onFailure { Log.w(TAG, "UDP unavailable", it) }.getOrNull()
 
         /** Over UDP nothing fails when the computer vanishes, so its FEEDBACK doubles as a heartbeat. */
@@ -524,12 +542,12 @@ class WebcamService : Service() {
         if (canNotify()) getSystemService(NotificationManager::class.java).notify(NOTIFICATION_STATUS, statusNotification(streamingTo))
     }
 
-    private fun showApprovalNotification(computerName: String) {
+    private fun showApprovalNotification(computerName: String, code: String) {
         if (WebcamState.appVisible || !canNotify()) return
         val notification = NotificationCompat.Builder(this, CHANNEL_REQUESTS)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(getString(R.string.approval_title, computerName))
-            .setContentText(getString(R.string.approval_text))
+            .setContentText(getString(R.string.approval_text, code))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setContentIntent(openAppIntent())
@@ -600,5 +618,3 @@ class WebcamService : Service() {
         )
     }
 }
-
-private fun ByteArray.toHex() = joinToString("") { "%02x".format(it) }

@@ -7,7 +7,7 @@ import struct
 from dataclasses import dataclass
 from typing import BinaryIO
 
-VERSION = 1
+VERSION = 2
 DEFAULT_PORT = 47800
 SERVICE_TYPE = "_openwebcam._tcp.local."
 MAX_PAYLOAD = 8 * 1024 * 1024
@@ -84,6 +84,27 @@ def read_message(stream: BinaryIO) -> Message:
     return Message(message_type, _read_exact(stream, length))
 
 
+class MessageReader:
+    """Splits a byte stream into messages as data arrives, so the caller never blocks mid-message."""
+
+    def __init__(self) -> None:
+        self._buffer = bytearray()
+
+    def feed(self, data: bytes) -> list[Message]:
+        self._buffer += data
+        messages = []
+        while len(self._buffer) >= _HEADER.size:
+            message_type, length = _HEADER.unpack_from(self._buffer)
+            if length > MAX_PAYLOAD:
+                raise ProtocolError(f"message too large ({length} bytes)")
+            end = _HEADER.size + length
+            if len(self._buffer) < end:
+                break
+            messages.append(Message(message_type, bytes(self._buffer[_HEADER.size : end])))
+            del self._buffer[:end]
+        return messages
+
+
 def decode_video(payload: bytes) -> VideoFrame:
     if len(payload) < _VIDEO_HEADER.size:
         raise ProtocolError("short video message")
@@ -96,16 +117,17 @@ def encode_video(pts_us: int, flags: int, data: bytes) -> bytes:
 
 
 # UDP video (optional, negotiated in HELLO/ACCEPT); see docs/internals/protocol.md#udp-video.
+# These are the plaintexts inside datagrams sealed by secure.Sealer.
 UDP_VIDEO = 0x01
 UDP_FEEDBACK = 0x81
 UDP_NACK = 0x82
 NACK_WHOLE_FRAME = 0xFFFF
 MAX_NACK_ENTRIES = 200
 MAX_DATAGRAM = 1400
-TOKEN_BYTES = 16
+MAX_PLAINTEXT = MAX_DATAGRAM - 24  # secure.OVERHEAD
 FEEDBACK_KEYFRAME = 0x01
 _FRAGMENT = struct.Struct(">BIHHBQ")
-_FEEDBACK = struct.Struct(">B16sBII")
+_FEEDBACK = struct.Struct(">BBII")
 
 
 @dataclass(frozen=True)
@@ -127,8 +149,8 @@ def parse_fragment(datagram: bytes) -> Fragment | None:
     return Fragment(frame_id, index, count, flags, pts_us, datagram[_FRAGMENT.size :])
 
 
-def encode_fragments(frame_id: int, pts_us: int, flags: int, data: bytes, max_datagram: int = MAX_DATAGRAM) -> list[bytes]:
-    chunk = max_datagram - _FRAGMENT.size
+def encode_fragments(frame_id: int, pts_us: int, flags: int, data: bytes, max_plaintext: int = MAX_PLAINTEXT) -> list[bytes]:
+    chunk = max_plaintext - _FRAGMENT.size
     count = max(1, -(-len(data) // chunk))
     return [
         _FRAGMENT.pack(UDP_VIDEO, frame_id & 0xFFFFFFFF, i, count, flags, pts_us) + data[i * chunk : (i + 1) * chunk]
@@ -136,13 +158,13 @@ def encode_fragments(frame_id: int, pts_us: int, flags: int, data: bytes, max_da
     ]
 
 
-def encode_feedback(token: bytes, flags: int, last_frame: int, lost: int) -> bytes:
-    return _FEEDBACK.pack(UDP_FEEDBACK, token, flags, last_frame & 0xFFFFFFFF, lost & 0xFFFFFFFF)
+def encode_feedback(flags: int, last_frame: int, lost: int) -> bytes:
+    return _FEEDBACK.pack(UDP_FEEDBACK, flags, last_frame & 0xFFFFFFFF, lost & 0xFFFFFFFF)
 
 
-def encode_nack(token: bytes, missing: list[tuple[int, int]]) -> bytes:
-    """u8 type | 16 B token | u8 count | count x (u32 frame id, u16 index); index 0xFFFF = whole frame."""
+def encode_nack(missing: list[tuple[int, int]]) -> bytes:
+    """u8 type | u8 count | count x (u32 frame id, u16 index); index 0xFFFF = whole frame."""
     entries = missing[:MAX_NACK_ENTRIES]
-    return struct.pack(">B16sB", UDP_NACK, token, len(entries)) + b"".join(
+    return struct.pack(">BB", UDP_NACK, len(entries)) + b"".join(
         struct.pack(">IH", frame_id & 0xFFFFFFFF, index) for frame_id, index in entries
     )

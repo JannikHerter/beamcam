@@ -36,12 +36,21 @@ keyframe is ~40 datagrams and almost never arrives whole. NACK-based resending f
 p99 105 ms), and resending is skipped for gaps longer than ~165 ms, where it only delivers stale
 video. TCP stays as the fallback for networks that drop UDP.
 
+## Pairing
+
+TLS with a pinned phone key, plus a per-computer secret the phone hands out on Allow (details and
+the exact rules in [the protocol](protocol.md#identity-and-pairing)). Two choices worth knowing:
+the computer has no certificate (Python's stdlib cannot make one, and a secret inside TLS gives the
+same protection), and the computer refuses to pair unless its user clicked Connect, which is what
+keeps a fake phone from receiving anything on auto-connect. The TLS socket is used from the session
+thread only, because an OpenSSL connection must not be read and written by two threads at once.
+
 ## Reconnecting
 
 Phones often rejoin Wi-Fi with a **new address** (Android's per-connection random MAC): the test
 phone went .143 → .150 in one day. So the window follows the phone by its device id through mDNS
 (`reconnect.py`) instead of retrying the old address, and retries failed connects while
-reconnecting. On the phone, a session for the same `clientId` replaces the older one, because
+reconnecting. On the phone, a session with the same pairing replaces the older one, because
 after a Wi-Fi change the older one is dead but would hold the camera until its heartbeat timed out.
 A UDP send error is just a lost datagram (`UdpLink.kt`); only the heartbeat or TCP ends a session.
 

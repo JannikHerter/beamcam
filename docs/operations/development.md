@@ -4,9 +4,9 @@
 
 - **Android app:** Android SDK (with platform 37 and build-tools 36; Gradle downloads missing ones
   once licenses are accepted) and a JDK 17–27. The Gradle wrapper (9.9) is checked in.
-- **Linux app:** Python 3.10+, PyGObject, GTK 4, libadwaita 1.5+, GStreamer 1.22+ with
+- **Linux app:** Python 3.10+, PyGObject, python-cryptography, GTK 4, libadwaita 1.5+, GStreamer 1.22+ with
   gst-plugins-base, -good (`v4l2sink`, `videoflip`), gst-libav (`avdec_h264`) and gst-plugin-gtk4
-  (`gtk4paintablesink`). On Arch: `pacman -S python-gobject gtk4 libadwaita gst-plugins-good gst-libav gst-plugin-gtk4`.
+  (`gtk4paintablesink`). On Arch: `pacman -S python-gobject python-cryptography gtk4 libadwaita gst-plugins-good gst-libav gst-plugin-gtk4`.
 - **Virtual camera:** `v4l2loopback-dkms` (see `install_command()` in `apps/linux/src/openwebcam/virtualcam.py`).
 
 ## Build and run

@@ -1,6 +1,6 @@
 import unittest
 
-from openwebcam.client import CLOSED, CONNECT_FAILED, CONNECTION_LOST
+from openwebcam.client import CLOSED, CONNECT_FAILED, CONNECTION_LOST, FORGOTTEN, UNKNOWN_PHONE
 from openwebcam.mdns import Phone
 from openwebcam.reconnect import DELAY, Reconnector, Target
 
@@ -54,9 +54,32 @@ class ReconnectorTest(unittest.TestCase):
         self.assertFalse(r.phones([Phone(id="phone-1", name="Pixel", host="192.168.2.147", port=47800)]))
 
     def test_user_stop_and_phone_end_reasons_are_final(self):
-        for reason in (CLOSED, "stopped", "denied", "replaced"):
+        for reason in (CLOSED, "stopped", "denied", "replaced", UNKNOWN_PHONE):
             with self.subTest(reason=reason):
                 self.assertIsNone(streamed().ended(reason))
+
+    def test_only_a_click_may_pair(self):
+        r = Reconnector()
+        r.connecting(PHONE)
+        self.assertTrue(r.pairing_allowed)
+        r.connecting(PHONE, user=False)  # the automatic connect at startup
+        self.assertFalse(r.pairing_allowed)
+        r = streamed()
+        r.ended(CONNECTION_LOST)
+        self.assertFalse(r.pairing_allowed)  # reconnects never pair
+
+    def test_clicked_connect_to_a_phone_that_forgot_us_pairs_again_once(self):
+        r = Reconnector()
+        r.connecting(PHONE)
+        self.assertEqual(r.ended(FORGOTTEN), (PHONE, 0.0))
+        self.assertTrue(r.pairing_allowed)
+        self.assertIsNone(r.ended(FORGOTTEN))
+
+    def test_automatic_connect_to_a_phone_that_forgot_us_stops(self):
+        r = Reconnector()
+        r.connecting(PHONE, user=False)
+        self.assertIsNone(r.ended(FORGOTTEN))
+        self.assertIsNone(streamed().ended(FORGOTTEN))
 
     def test_streaming_again_resets_attempts(self):
         r = streamed(attempts=1)

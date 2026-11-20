@@ -10,7 +10,7 @@ from typing import Protocol as Interface
 from gi.repository import GLib
 
 from openwebcam import protocol
-from openwebcam.client import CLOSED, VIDEO_ERROR, Session, StreamInfo
+from openwebcam.client import CLOSED, VIDEO_ERROR, PairingStore, Session, StreamInfo
 from openwebcam.pipeline import Pipeline, PipelineError
 
 log = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ MAX_EARLY_FRAMES = 120
 
 
 class ControllerEvents(Interface):
-    def on_pending(self) -> None: ...
+    def on_pending(self, code: str) -> None: ...
     def on_streaming(self, info: StreamInfo, pipeline: Pipeline) -> None: ...
     def on_camera(self, facing: str) -> None: ...
     def on_ended(self, reason: str) -> None: ...
@@ -32,10 +32,11 @@ class Controller:
         self,
         host: str,
         port: int,
-        client_id: str,
         client_name: str,
         device: str | None,
         events: ControllerEvents,
+        pairings: PairingStore,
+        allow_pairing: bool = False,
         preview: bool = False,
         snapshots: bool = False,
         transports: tuple[str, ...] = ("udp", "tcp"),
@@ -51,7 +52,9 @@ class Controller:
         self._ended = False
         self._pipeline_error: str | None = None
         self.info: StreamInfo | None = None
-        self.session = Session(host, port, client_id, client_name, self, transports=transports)
+        self.session = Session(
+            host, port, client_name, self, pairings, allow_pairing=allow_pairing, transports=transports
+        )
 
     @property
     def pipeline(self) -> Pipeline | None:
@@ -69,8 +72,8 @@ class Controller:
 
     # SessionListener, called on the session thread.
 
-    def on_pending(self) -> None:
-        GLib.idle_add(self._events.on_pending)
+    def on_pending(self, code: str) -> None:
+        GLib.idle_add(self._events.on_pending, code)
 
     def on_accept(self, info: StreamInfo) -> None:
         self.info = info

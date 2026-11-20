@@ -51,6 +51,7 @@ class Window(Adw.ApplicationWindow):
         header = Adw.HeaderBar()
         menu = Gio.Menu()
         menu.append("Connect by Address…", "win.connect-address")
+        menu.append("Forget Paired Phones…", "win.forget-phones")
         menu.append("Remove Virtual Camera…", "win.remove-camera")
         menu.append("About Open Webcam", "win.about")
         header.pack_end(Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu, tooltip_text="Main Menu"))
@@ -61,6 +62,7 @@ class Window(Adw.ApplicationWindow):
 
         for name, callback in (
             ("connect-address", self._ask_address),
+            ("forget-phones", self._confirm_forget_phones),
             ("remove-camera", self._confirm_remove_camera),
             ("about", self._show_about),
         ):
@@ -214,6 +216,26 @@ class Window(Adw.ApplicationWindow):
         dialog.connect("response", on_response)
         dialog.present(self)
 
+    def _confirm_forget_phones(self) -> None:
+        dialog = Adw.AlertDialog(
+            heading="Forget Paired Phones?",
+            body="This computer will no longer connect to your phones by itself. To use a phone again, "
+            "click Connect and tap Allow on the phone.",
+        )
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("forget", "Forget")
+        dialog.set_response_appearance("forget", Adw.ResponseAppearance.DESTRUCTIVE)
+
+        def on_response(_dialog, response: str) -> None:
+            if response == "forget":
+                self.disconnect()
+                self.config.forget_all()
+                self._render_phones()
+                self.toast("Paired phones forgotten.")
+
+        dialog.connect("response", on_response)
+        dialog.present(self)
+
     def _confirm_remove_camera(self) -> None:
         dialog = Adw.AlertDialog(
             heading="Remove the Virtual Camera?",
@@ -241,17 +263,19 @@ class Window(Adw.ApplicationWindow):
             # The phone is back at a new address: no need to wait for the timer.
             GLib.source_remove(self.reconnect_source)
             self._reconnect()
-        if self.controller is None and self.auto_connect_allowed and self.config.last_phone_id:
-            remembered = next((p for p in phones if p.id == self.config.last_phone_id), None)
+        last = self.config.last_phone_id
+        if self.controller is None and self.auto_connect_allowed and last and self.config.is_paired(last):
+            remembered = next((p for p in phones if p.id == last), None)
             if remembered:
-                self.connect_to(remembered.host, remembered.port, remembered.name, remembered.id)
+                self.connect_to(remembered.host, remembered.port, remembered.name, remembered.id, user=False)
         return False
 
     def _render_phones(self) -> None:
         while (row := self.phone_list.get_first_child()) is not None:
             self.phone_list.remove(row)
         for phone in self.phones:
-            row = Adw.ActionRow(title=GLib.markup_escape_text(phone.name), subtitle=phone.host, activatable=True)
+            subtitle = f"Paired · {phone.host}" if self.config.is_paired(phone.id) else phone.host
+            row = Adw.ActionRow(title=GLib.markup_escape_text(phone.name), subtitle=subtitle, activatable=True)
             row.add_prefix(Gtk.Image(icon_name="phone-symbolic"))
             button = Gtk.Button(label="Connect", valign=Gtk.Align.CENTER, css_classes=["suggested-action"])
             button.connect("clicked", lambda _b, p=phone: self.connect_to(p.host, p.port, p.name, p.id))
@@ -300,19 +324,28 @@ class Window(Adw.ApplicationWindow):
         dialog.connect("response", on_response)
         dialog.present(self)
 
-    def connect_to(self, host: str, port: int, name: str, phone_id: str | None, reconnecting: bool = False) -> None:
+    def connect_to(
+        self, host: str, port: int, name: str, phone_id: str | None, reconnecting: bool = False, user: bool = True
+    ) -> None:
         if self.controller is not None:
             return
         self.auto_connect_allowed = False
         if not reconnecting:
-            self.reconnector.connecting(Target(host, port, name, phone_id))
+            self.reconnector.connecting(Target(host, port, name, phone_id), user=user)
         self.refresh_camera_state()
         self.connecting_status.set_title(f"Reconnecting to {name}…" if reconnecting else f"Connecting to {name}…")
         self.connecting_status.set_description(None)
         self.stack.set_visible_child_name("connecting")
         device = self.camera.path if self.camera else None
         self.controller = Controller(
-            host, port, self.config.client_id, computer_name(), device, self, preview=True
+            host,
+            port,
+            computer_name(),
+            device,
+            self,
+            self.config,
+            allow_pairing=self.reconnector.pairing_allowed,
+            preview=True,
         )
         self.controller.start()
 
@@ -333,9 +366,12 @@ class Window(Adw.ApplicationWindow):
 
     # ControllerEvents (main thread)
 
-    def on_pending(self) -> None:
+    def on_pending(self, code: str) -> None:
         self.connecting_status.set_title("Tap “Allow” on Your Phone")
-        self.connecting_status.set_description(f"Your phone is asking whether “{computer_name()}” may use its camera.")
+        self.connecting_status.set_description(
+            f"Your phone is asking whether “{GLib.markup_escape_text(computer_name())}” may use its camera.\n"
+            f"It shows the code <b>{code}</b>, the same as here."
+        )
 
     def on_camera(self, facing: str) -> None:
         self.facing = facing

@@ -53,11 +53,11 @@ class ProtocolTest {
 
 class UdpTest {
     @Test
-    fun `frame splits into datagrams with header`() {
-        val data = ByteArray(Udp.MAX_DATAGRAM * 2) { it.toByte() }
+    fun `frame splits into pieces that fit a sealed datagram`() {
+        val data = ByteArray(Udp.MAX_PLAINTEXT * 2) { it.toByte() }
         val parts = fragmentFrame(frameId = 7, ptsMicros = 0x0102030405060708L, flags = Protocol.FLAG_KEYFRAME, data = data)
         assertEquals(3, parts.size)
-        assertTrue(parts.all { it.size <= Udp.MAX_DATAGRAM })
+        assertTrue(parts.all { it.size <= Udp.MAX_PLAINTEXT && it.size + Sealer.OVERHEAD <= Udp.MAX_DATAGRAM })
         // Same bytes as test_protocol.py's UDP vector.
         assertArrayEquals(
             byteArrayOf(0x01, 0, 0, 0, 7, 0, 1, 0, 3, 1, 1, 2, 3, 4, 5, 6, 7, 8),
@@ -74,24 +74,22 @@ class UdpTest {
 
     @Test
     fun `feedback parses and rejects junk`() {
-        val bytes = byteArrayOf(0x81.toByte()) + ByteArray(16) { 9 } + byteArrayOf(1, 0, 0, 1, 0, 0, 0, 0, 5)
-        val feedback = parseFeedback(bytes, bytes.size)!!
+        val bytes = byteArrayOf(0x81.toByte(), 1, 0, 0, 1, 0, 0, 0, 0, 5)
+        val feedback = parseFeedback(bytes)!!
         assertTrue(feedback.wantsKeyframe)
         assertEquals(256L, feedback.lastFrame)
         assertEquals(5L, feedback.lost)
-        assertNull(parseFeedback(bytes, 10))
-        assertNull(parseFeedback(byteArrayOf(0x01) + bytes.copyOfRange(1, bytes.size), bytes.size))
+        assertNull(parseFeedback(bytes.copyOf(5)))
+        assertNull(parseFeedback(byteArrayOf(0x01) + bytes.copyOfRange(1, bytes.size)))
     }
 }
 
 class NackTest {
     @Test
     fun `nack parses entries and rejects truncation`() {
-        // Same bytes as encode_nack(bytes(16), [(258, 1), (3, 0xFFFF)]) in protocol.py.
-        val bytes = byteArrayOf(0x82.toByte()) + ByteArray(16) + byteArrayOf(2, 0, 0, 1, 2, 0, 1, 0, 0, 0, 3, -1, -1)
-        val (token, entries) = parseNack(bytes, bytes.size)!!
-        assertArrayEquals(ByteArray(16), token)
-        assertEquals(listOf(258L to 1, 3L to Udp.NACK_WHOLE_FRAME), entries)
-        assertNull(parseNack(bytes, bytes.size - 1))
+        // Same bytes as encode_nack([(258, 1), (3, 0xFFFF)]) in protocol.py.
+        val bytes = byteArrayOf(0x82.toByte(), 2, 0, 0, 1, 2, 0, 1, 0, 0, 0, 3, -1, -1)
+        assertEquals(listOf(258L to 1, 3L to Udp.NACK_WHOLE_FRAME), parseNack(bytes))
+        assertNull(parseNack(bytes.copyOf(bytes.size - 1)))
     }
 }

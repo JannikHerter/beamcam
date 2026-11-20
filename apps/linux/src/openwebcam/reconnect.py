@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from openwebcam.client import CONNECT_FAILED, CONNECTION_LOST
+from openwebcam.client import CONNECT_FAILED, CONNECTION_LOST, FORGOTTEN
 from openwebcam.mdns import Phone
 
 ATTEMPTS = 10
@@ -34,6 +34,8 @@ class Reconnector:
         self._left = 0
         self._target: Target | None = None
         self._attempted: Target | None = None  # where the current or last attempt went
+        self._user = False  # the current attempt was started by the user, not automatically
+        self._repaired = False
 
     @property
     def target(self) -> Target | None:
@@ -43,11 +45,19 @@ class Reconnector:
     def reconnecting(self) -> bool:
         return self._left > 0
 
-    def connecting(self, target: Target) -> None:
-        """A user-started connection; nothing is retried until it has streamed once."""
+    @property
+    def pairing_allowed(self) -> bool:
+        """Only a connection the user asked for may pair with a phone; automatic ones never do."""
+        return self._user
+
+    def connecting(self, target: Target, user: bool = True) -> None:
+        """A new connection (clicked, or the automatic one at startup); nothing is retried until
+        it has streamed once."""
         self._target = target
         self._attempted = target
         self._left = 0
+        self._user = user
+        self._repaired = False
 
     def attempting(self) -> Target | None:
         """The address for the next retry, recorded as the one being tried."""
@@ -60,6 +70,7 @@ class Reconnector:
         if phone_id and not self._target.phone_id:
             self._target = replace(self._target, phone_id=phone_id)
         self._left = self._attempts
+        self._user = False
 
     def phones(self, phones: list[Phone]) -> bool:
         """Follow the phone to its current address. True if it moved."""
@@ -75,6 +86,10 @@ class Reconnector:
     def ended(self, reason: str) -> tuple[Target, float] | None:
         """(where, delay in seconds) for the next attempt, or None to stop. No delay when the phone
         has moved since the last attempt, since that attempt went to a dead address."""
+        if reason == FORGOTTEN and self._user and not self._repaired and self._target is not None:
+            # The phone forgot us; the user clicked Connect, so pair again right away (the phone asks).
+            self._repaired = True
+            return self._target, 0.0
         if self._target is None or self._left <= 0 or reason not in _RETRYABLE:
             self.cancel()
             return None

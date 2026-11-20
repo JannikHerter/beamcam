@@ -22,11 +22,13 @@
 
 1. Your phone appears on the computer. Click **Connect**.
 2. The phone asks **Allow “your computer” to use your camera?** Tap **Allow**. You're only asked
-   once per computer.
+   once per computer. The phone and the computer show the same 6-digit code; if they ever differ,
+   tap **Don't allow**: something else is pretending to be your phone or computer.
 3. You see the picture on your computer. In your video call, browser or any other app that uses
    a camera, choose the camera **Open Webcam**.
 
-Next time, opening both apps is enough: the computer reconnects to your phone by itself.
+Next time, opening both apps is enough: the computer connects to your phone by itself. It only does
+that with a phone you paired this way; other phones just appear in the list.
 
 ## While streaming
 
@@ -38,4 +40,4 @@ Next time, opening both apps is enough: the computer reconnects to your phone by
 ## Undo everything
 
 - On the phone: **⋮ → Forget allowed computers**, and **⋮ → Turn off** to stop being discoverable.
-- On the computer: **☰ → Remove Virtual Camera**.
+- On the computer: **☰ → Forget Paired Phones**, and **☰ → Remove Virtual Camera**.
