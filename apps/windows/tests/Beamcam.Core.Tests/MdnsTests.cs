@@ -86,13 +86,13 @@ public class MdnsTests
     public void QueriesAreIgnored() => Assert.Empty(Mdns.ParseResponse(Mdns.BuildQuery()));
 
     [Fact]
-    public void QueryAsksForTheServiceWithAUnicastAnswer()
+    public void QueryAsksForTheServiceWithAMulticastAnswer()
     {
         var query = Mdns.BuildQuery();
         Assert.Equal(1, BinaryPrimitives.ReadUInt16BigEndian(query.AsSpan(4)));
         Assert.Equal(Mdns.EncodeName(Service), query[12..^4]);
         Assert.Equal((ushort)RecordType.Ptr, BinaryPrimitives.ReadUInt16BigEndian(query.AsSpan(query.Length - 4)));
-        Assert.Equal(0x8001, BinaryPrimitives.ReadUInt16BigEndian(query.AsSpan(query.Length - 2)));
+        Assert.Equal(0x0001, BinaryPrimitives.ReadUInt16BigEndian(query.AsSpan(query.Length - 2))); // no QU bit
     }
 
     [Fact]

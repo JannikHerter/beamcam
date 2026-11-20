@@ -51,10 +51,11 @@ public static class Mdns
 {
     public static readonly IPAddress Group = IPAddress.Parse("224.0.0.251");
     public const int Port = 5353;
+    // Plain (QM) questions, so phones answer by multicast. Asking for unicast answers (QU) fails on
+    // Windows: its own mDNS service shares port 5353 and a unicast datagram reaches only one of the
+    // sockets. Windows' firewall lets multicast answers in shortly after our question even without
+    // the installer's rule.
     const ushort ClassIn = 1;
-    // "QU": ask for a unicast answer. Windows' firewall lets unicast answers to our multicast query in
-    // without a rule; multicast answers need the rule the installer adds.
-    const ushort UnicastResponse = 0x8000;
 
     public static readonly double[] QuerySchedule = [0.0, 1.0, 3.0]; // then every QueryInterval seconds
     public const double QueryInterval = 5.0;
@@ -178,7 +179,7 @@ public static class Mdns
         BinaryPrimitives.WriteUInt16BigEndian(packet.AsSpan(4), 1);
         encoded.CopyTo(packet, 12);
         BinaryPrimitives.WriteUInt16BigEndian(packet.AsSpan(12 + encoded.Length), (ushort)type);
-        BinaryPrimitives.WriteUInt16BigEndian(packet.AsSpan(14 + encoded.Length), ClassIn | UnicastResponse);
+        BinaryPrimitives.WriteUInt16BigEndian(packet.AsSpan(14 + encoded.Length), ClassIn);
         return packet;
     }
 }

@@ -89,3 +89,30 @@ configured `v4l2loopback`, so it never fights OBS or a manual setup. Watch out f
 - `targetSdk` stays at 36 for now. Apps targeting Android 17 (API 37) need the runtime
   `ACCESS_LOCAL_NETWORK` permission ([docs](https://developer.android.com/privacy-and-security/local-network-permission)),
   so moving to 37 needs a permission screen for it. `compileSdk` is 37 because current AndroidX requires it.
+
+## Windows
+
+`apps/windows` is the same computer side for Windows 11. Its core (`Beamcam.Core`) is a one-to-one
+port of the Linux modules, so pairing, UDP and reconnecting behave the same; only the edges differ.
+
+- **Virtual camera.** Windows 11's `MFCreateVirtualCamera` registers a camera named “Beamcam” whose
+  frames come from a COM media source. Windows' Frame Server (a service running as LOCAL SERVICE in
+  session 0) loads that source, so it must be a native DLL registered in HKLM: that is the one step
+  that needs administrator rights, done by the installer. We create the camera with *session*
+  lifetime: it exists while the app runs and disappears with it, so there is no setup or removal
+  step for the user. Windows 10 has no such API (only DirectShow filters), and we do not support it.
+- **Frames to the source.** The app decodes and rotates, then serves the newest upright 1280x720
+  NV12 frame on a named pipe; each source that connects gets the newest frame whenever one is ready,
+  never a backlog. Without the app the source shows black; between sessions the app sends a
+  “waiting for the phone” picture, so other apps never keep showing the last frame of a call.
+- **Decoding** uses Windows' own H.264 decoder (Media Foundation) in low-latency mode; without it the
+  decoder holds frames back for reordering.
+- **Discovery** speaks mDNS on its own socket like Linux, sharing port 5353 with Windows' own mDNS
+  service. Questions must not ask for unicast answers (QU): a unicast datagram to a shared port
+  reaches only one socket, usually Windows' own. Multicast answers reach every socket. Windows' firewall lets
+  answers in that arrive within a few seconds of our own question (tested on a Public network with
+  no rule), which is enough because we ask every few seconds; the installer also adds a UDP rule for
+  Beamcam, limited to the local subnet, so a phone's own announcements get in too.
+- **Windows sockets trap:** an ICMP "port unreachable" for an earlier datagram fails the *next*
+  `recvfrom` with `WSAECONNRESET`. Both UDP sockets turn that off (`SIO_UDP_CONNRESET`), or a single
+  lost heartbeat would end the stream.

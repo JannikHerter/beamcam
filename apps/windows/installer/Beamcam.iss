@@ -63,8 +63,8 @@ Name: "{autoprograms}\Beamcam"; Filename: "{app}\Beamcam.exe"
 Name: "{autodesktop}\Beamcam"; Filename: "{app}\Beamcam.exe"; Tasks: desktopicon
 
 [Run]
-; Phones answer the search for them from the local network; without this rule Windows would drop
-; those answers or ask the user about the firewall. Local network only.
+; Phones announce themselves on the local network. Answers to Beamcam's own questions get through
+; Windows' firewall anyway; this rule also lets the phones' unasked announcements in. Local network only.
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Beamcam"""; Flags: runhidden; StatusMsg: "{cm:FindPhone}"
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""Beamcam"" dir=in action=allow protocol=UDP remoteip=localsubnet program=""{app}\Beamcam.exe"" enable=yes"; Flags: runhidden
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""Beamcam"" dir=in action=allow protocol=UDP remoteip=localsubnet program=""{app}\beamcam-cli.exe"" enable=yes"; Flags: runhidden
