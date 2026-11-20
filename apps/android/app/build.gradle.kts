@@ -4,6 +4,12 @@ plugins {
 }
 
 android {
+    // The language can be picked in the app, so every bundle install needs all translations.
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
     namespace = "org.beamcam"
     compileSdk = 37
 

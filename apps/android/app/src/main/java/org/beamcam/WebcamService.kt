@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.hardware.display.DisplayManager
@@ -64,6 +65,16 @@ class WebcamService : Service() {
     private val sessionLock = Any()
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun attachBaseContext(newBase: Context) = super.attachBaseContext(AppLanguage.wrap(newBase))
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // The language may have changed: show the notification in the new one.
+        if (serverSocket == null) return
+        createChannels()
+        notifyStatus((WebcamState.state.value.status as? WebcamStatus.Streaming)?.computerName)
+    }
 
     override fun onCreate() {
         super.onCreate()

@@ -18,7 +18,7 @@ beamcam = "beamcam.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-beamcam = ["data/setup-virtual-camera"]
+beamcam = ["data/setup-virtual-camera", "locale/*.po"]
 
 [tool.ruff]
 line-length = 120

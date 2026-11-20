@@ -46,6 +46,22 @@ sudo apt install ./apps/linux/packaging/dist/beamcam_*.deb
 Older releases such as Ubuntu 24.04 lack `gstreamer1.0-gtk4`, which the preview needs.
 `makepkg` and `dpkg-buildpackage` leave `build/` in `apps/linux`; it is ignored by git.
 
+## Translations
+
+Both apps follow the device's language and offer **Language** in their menu to pick another.
+English is the source; German is the only translation so far.
+
+- **Phone:** `res/values/strings.xml`, with one `values-<lang>/strings.xml` per language. A new
+  language also goes in `res/xml/locales_config.xml` and `AppLanguage.SUPPORTED`. Android 13+
+  keeps the choice itself (it also appears in the phone's Settings → Apps → Beamcam → Language);
+  older versions store it in the app's settings and apply it in `AppLanguage.wrap`.
+- **Computer:** texts are wrapped in `_()` (or `N_()` where they are defined and shown elsewhere).
+  Translations are gettext `.po` files in `apps/linux/src/beamcam/locale/`, edited with any .po
+  editor and read at startup, so no compile step is needed. A new language also goes in
+  `i18n.LANGUAGES`. `tests/test_i18n.py` fails when a text is untranslated, no longer used, or its
+  `{placeholders}` differ. Picking a language restarts the window. The command line stays
+  English, because scripts read it.
+
 ## Emulator
 
 The emulator sits behind its own NAT: its mDNS may reach the computer, but its address (10.0.2.x)

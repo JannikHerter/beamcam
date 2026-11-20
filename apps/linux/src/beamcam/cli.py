@@ -38,6 +38,10 @@ def main(argv: list[str] | None = None) -> int:
         return _discover(args.timeout)
     if args.command == "stream":
         return _stream(args)
+    from beamcam import i18n
+    from beamcam.config import Config
+
+    i18n.setup(Config.load().language)
     from beamcam.ui import run
 
     return run([sys.argv[0], *gtk_args])

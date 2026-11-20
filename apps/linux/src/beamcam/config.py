@@ -34,6 +34,7 @@ class PairedPhone:
 class Config:
     last_phone_id: str | None = None
     last_address: str | None = None
+    language: str | None = None  # None: the computer's language
     # Phones this computer paired with, by certificate fingerprint (hex):
     # {"secret": hex, "phone_id": str, "name": str, "last_connected": unix seconds}.
     # The secret is what the phone allowed.
