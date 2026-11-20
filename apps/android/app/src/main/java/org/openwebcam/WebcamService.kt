@@ -17,6 +17,7 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.SystemClock
 import android.util.Log
 import android.view.Display
 import android.view.OrientationEventListener
@@ -27,6 +28,8 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
@@ -39,7 +42,13 @@ import java.io.BufferedOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.Inet4Address
+import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.SocketAddress
+import java.security.SecureRandom
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
@@ -156,7 +165,74 @@ class WebcamService : Service() {
         }
     }
 
-    private class Outgoing(val type: Int, val payload: ByteArray, val isFrame: Boolean = false, val isKeyframe: Boolean = false)
+    /** A control message, or (type VIDEO) one access unit with its timestamp and flags. */
+    private class Outgoing(val type: Int, val payload: ByteArray, val ptsMicros: Long = 0, val flags: Int = 0)
+
+    /** Video over UDP to the address the computer's first FEEDBACK came from (so firewalls see replies). */
+    private class UdpLink(val socket: DatagramSocket, val token: ByteArray, private val peer: InetAddress) {
+        @Volatile var target: SocketAddress? = null
+            private set
+        val punched = CompletableDeferred<Unit>()
+        @Volatile var lastFeedbackAt = SystemClock.elapsedRealtime()
+            private set
+        private var frameId = 0L
+        private var lastKeyframeRequest = 0L
+        // Recently sent datagrams by frame id, for resending what the computer reports missing.
+        private val history = object : LinkedHashMap<Long, List<ByteArray>>() {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, List<ByteArray>>) = size > RESEND_HISTORY_FRAMES
+        }
+
+        fun send(frame: Outgoing) {
+            val to = target ?: return
+            val id = frameId++
+            val parts = fragmentFrame(id, frame.ptsMicros, frame.flags, frame.payload)
+            synchronized(history) { history[id] = parts }
+            for (part in parts) socket.send(DatagramPacket(part, part.size, to))
+        }
+
+        private fun resend(entries: List<Pair<Long, Int>>) {
+            val to = target ?: return
+            for ((id, index) in entries) {
+                val parts = synchronized(history) { history[id] } ?: continue
+                val wanted = if (index == Udp.NACK_WHOLE_FRAME) parts else listOfNotNull(parts.getOrNull(index))
+                for (part in wanted) socket.send(DatagramPacket(part, part.size, to))
+            }
+        }
+
+        fun receiveLoop(onKeyframeRequest: () -> Unit) {
+            val buffer = ByteArray(2048)
+            val packet = DatagramPacket(buffer, buffer.size)
+            try {
+                while (true) {
+                    packet.setLength(buffer.size)
+                    socket.receive(packet)
+                    if (packet.address != peer) continue
+                    val nack = parseNack(buffer, packet.length)
+                    if (nack != null) {
+                        if (nack.first.contentEquals(token)) resend(nack.second)
+                        continue
+                    }
+                    val feedback = parseFeedback(buffer, packet.length) ?: continue
+                    if (!feedback.token.contentEquals(token)) continue
+                    val now = SystemClock.elapsedRealtime()
+                    lastFeedbackAt = now
+                    if (target == null) {
+                        target = packet.socketAddress
+                        punched.complete(Unit)
+                    }
+                    // A lost burst produces several requests; one keyframe answers all of them.
+                    if (feedback.wantsKeyframe && now - lastKeyframeRequest > KEYFRAME_REQUEST_INTERVAL_MS) {
+                        lastKeyframeRequest = now
+                        onKeyframeRequest()
+                    }
+                }
+            } catch (e: IOException) {
+                // Socket closed.
+            }
+        }
+
+        fun close() = socket.close()
+    }
 
     private inner class ClientSession(private val socket: Socket) {
         private val outgoing = Channel<Outgoing>(capacity = OUTGOING_CAPACITY)
@@ -171,6 +247,8 @@ class WebcamService : Service() {
         @Volatile private var quadrant = 0
         @Volatile private var lastRotation = -1
         @Volatile private var endReason: String? = null
+        @Volatile private var udpLink: UdpLink? = null
+        private var udpWatchdog: Job? = null
 
         suspend fun run() = coroutineScope {
             socket.tcpNoDelay = true
@@ -190,6 +268,8 @@ class WebcamService : Service() {
                     output.flush()
                     return@coroutineScope
                 }
+                val transports = json.optJSONArray("transports")
+                val wantsUdp = transports != null && (0 until transports.length()).any { transports.optString(it) == "udp" }
                 val clientId = json.optString("clientId")
                 val clientName = json.optString("clientName").ifBlank { getString(R.string.unknown_computer) }.take(64)
                 socket.soTimeout = 0
@@ -214,19 +294,33 @@ class WebcamService : Service() {
                 }
                 if (endReason != null) return@coroutineScope
 
-                output.writeJson(
-                    Protocol.ACCEPT,
-                    JSONObject()
-                        .put("protocol", Protocol.VERSION)
-                        .put("deviceId", settings.deviceId)
-                        .put("deviceName", settings.deviceName)
-                        .put("codec", "h264")
-                        .put("width", FORMAT.width)
-                        .put("height", FORMAT.height)
-                        .put("fps", FORMAT.fps)
-                        .put("facing", settings.facing.wire),
-                )
+                val offer = if (wantsUdp && socket.inetAddress is Inet4Address) openUdp(socket.inetAddress) else null
+                val accept = JSONObject()
+                    .put("protocol", Protocol.VERSION)
+                    .put("deviceId", settings.deviceId)
+                    .put("deviceName", settings.deviceName)
+                    .put("codec", "h264")
+                    .put("width", FORMAT.width)
+                    .put("height", FORMAT.height)
+                    .put("fps", FORMAT.fps)
+                    .put("facing", settings.facing.wire)
+                if (offer != null) {
+                    accept.put("udpPort", offer.socket.localPort).put("udpToken", offer.token.toHex())
+                }
+                output.writeJson(Protocol.ACCEPT, accept)
                 output.flush()
+                if (offer != null) {
+                    launch { offer.receiveLoop { streamer?.requestKeyframe() } }
+                    if (withTimeoutOrNull(UDP_PUNCH_TIMEOUT_MS) { offer.punched.await() } != null) {
+                        udpLink = offer
+                        udpWatchdog = launch { watchUdp(offer) }
+                        Log.i(TAG, "streaming video over UDP")
+                    } else {
+                        // UDP blocked on this network (or an adb port forward): stay on TCP.
+                        offer.close()
+                        Log.i(TAG, "no UDP from the computer, streaming video over TCP")
+                    }
+                }
                 streaming = true
                 WebcamState.update { it.copy(status = WebcamStatus.Streaming(clientName)) }
                 notifyStatus(clientName)
@@ -235,17 +329,44 @@ class WebcamService : Service() {
                 startCamera(settings.facing)
 
                 for (message in outgoing) {
-                    output.writeMessage(message.type, message.payload)
+                    write(output, message)
                     // Batch whatever is already queued into one flush.
                     while (true) {
-                        val next = outgoing.tryReceive().getOrNull() ?: break
-                        output.writeMessage(next.type, next.payload)
+                        write(output, outgoing.tryReceive().getOrNull() ?: break)
                     }
                     output.flush()
                 }
                 sendEnd(output)
             } finally {
+                udpWatchdog?.cancel()
+                udpLink?.close()
                 runCatching { socket.close() }
+            }
+        }
+
+        private fun write(output: DataOutputStream, message: Outgoing) {
+            val udp = udpLink
+            when {
+                message.type != Protocol.VIDEO -> output.writeMessage(message.type, message.payload)
+                udp != null -> udp.send(message)
+                else -> output.writeMessage(Protocol.VIDEO, encodeVideoPayload(message.ptsMicros, message.flags, message.payload))
+            }
+        }
+
+        private fun openUdp(peer: InetAddress): UdpLink? = runCatching {
+            val socket = DatagramSocket(0).apply { sendBufferSize = UDP_SEND_BUFFER_BYTES }
+            UdpLink(socket, ByteArray(Udp.TOKEN_BYTES).also { SecureRandom().nextBytes(it) }, peer)
+        }.onFailure { Log.w(TAG, "UDP unavailable", it) }.getOrNull()
+
+        /** Over UDP nothing fails when the computer vanishes, so its FEEDBACK doubles as a heartbeat. */
+        private suspend fun watchUdp(link: UdpLink) {
+            while (true) {
+                delay(1000)
+                if (SystemClock.elapsedRealtime() - link.lastFeedbackAt > UDP_LIVENESS_TIMEOUT_MS) {
+                    Log.i(TAG, "computer stopped answering over UDP")
+                    outgoing.close()
+                    return
+                }
             }
         }
 
@@ -302,9 +423,7 @@ class WebcamService : Service() {
             // Prepending SPS/PPS to every keyframe lets the receiver (re)start decoding at any keyframe.
             val config = codecConfig
             val unit = if (keyframe && config != null) config + data else data
-            val sent = outgoing.trySend(
-                Outgoing(Protocol.VIDEO, encodeVideoPayload(ptsMicros, flags, unit), isFrame = true, isKeyframe = keyframe),
-            )
+            val sent = outgoing.trySend(Outgoing(Protocol.VIDEO, unit, ptsMicros, flags))
             if (sent.isSuccess) {
                 waitingForKeyframe = false
             } else if (!sent.isClosed && !waitingForKeyframe) {
@@ -486,6 +605,12 @@ class WebcamService : Service() {
         // About a quarter second of video at 30 fps; beyond that we drop frames instead of adding lag.
         private const val OUTGOING_CAPACITY = 8
         private const val SEND_BUFFER_BYTES = 64 * 1024
+        // A 720p keyframe is ~100 KB; it must fit so the burst is not dropped on the phone itself.
+        private const val UDP_SEND_BUFFER_BYTES = 512 * 1024
+        private const val UDP_PUNCH_TIMEOUT_MS = 1000L
+        private const val UDP_LIVENESS_TIMEOUT_MS = 8000L
+        private const val KEYFRAME_REQUEST_INTERVAL_MS = 200L
+        private const val RESEND_HISTORY_FRAMES = 90
 
         val FORMAT = StreamFormat(width = 1280, height = 720, fps = 30, bitrate = 4_000_000)
 
@@ -510,3 +635,5 @@ class WebcamService : Service() {
         )
     }
 }
+
+private fun ByteArray.toHex() = joinToString("") { "%02x".format(it) }

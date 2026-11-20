@@ -93,3 +93,56 @@ def decode_video(payload: bytes) -> VideoFrame:
 
 def encode_video(pts_us: int, flags: int, data: bytes) -> bytes:
     return encode(VIDEO, _VIDEO_HEADER.pack(pts_us, flags) + data)
+
+
+# UDP video (optional, negotiated in HELLO/ACCEPT); see docs/internals/protocol.md#udp-video.
+UDP_VIDEO = 0x01
+UDP_FEEDBACK = 0x81
+UDP_NACK = 0x82
+NACK_WHOLE_FRAME = 0xFFFF
+MAX_NACK_ENTRIES = 200
+MAX_DATAGRAM = 1400
+TOKEN_BYTES = 16
+FEEDBACK_KEYFRAME = 0x01
+_FRAGMENT = struct.Struct(">BIHHBQ")
+_FEEDBACK = struct.Struct(">B16sBII")
+
+
+@dataclass(frozen=True)
+class Fragment:
+    frame_id: int
+    index: int
+    count: int
+    flags: int
+    pts_us: int
+    data: bytes
+
+
+def parse_fragment(datagram: bytes) -> Fragment | None:
+    if len(datagram) < _FRAGMENT.size or datagram[0] != UDP_VIDEO:
+        return None
+    _type, frame_id, index, count, flags, pts_us = _FRAGMENT.unpack_from(datagram)
+    if count == 0 or index >= count:
+        return None
+    return Fragment(frame_id, index, count, flags, pts_us, datagram[_FRAGMENT.size :])
+
+
+def encode_fragments(frame_id: int, pts_us: int, flags: int, data: bytes, max_datagram: int = MAX_DATAGRAM) -> list[bytes]:
+    chunk = max_datagram - _FRAGMENT.size
+    count = max(1, -(-len(data) // chunk))
+    return [
+        _FRAGMENT.pack(UDP_VIDEO, frame_id & 0xFFFFFFFF, i, count, flags, pts_us) + data[i * chunk : (i + 1) * chunk]
+        for i in range(count)
+    ]
+
+
+def encode_feedback(token: bytes, flags: int, last_frame: int, lost: int) -> bytes:
+    return _FEEDBACK.pack(UDP_FEEDBACK, token, flags, last_frame & 0xFFFFFFFF, lost & 0xFFFFFFFF)
+
+
+def encode_nack(token: bytes, missing: list[tuple[int, int]]) -> bytes:
+    """u8 type | 16 B token | u8 count | count x (u32 frame id, u16 index); index 0xFFFF = whole frame."""
+    entries = missing[:MAX_NACK_ENTRIES]
+    return struct.pack(">B16sB", UDP_NACK, token, len(entries)) + b"".join(
+        struct.pack(">IH", frame_id & 0xFFFFFFFF, index) for frame_id, index in entries
+    )

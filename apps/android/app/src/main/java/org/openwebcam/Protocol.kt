@@ -67,3 +67,70 @@ fun encodeVideoPayload(ptsMicros: Long, flags: Int, data: ByteArray, offset: Int
     System.arraycopy(data, offset, out, 9, length)
     return out
 }
+
+/**
+ * UDP video (optional, negotiated in HELLO/ACCEPT). Each frame is split into datagrams of at most
+ * [MAX_DATAGRAM] bytes: u8 type | u32 frame id | u16 index | u16 count | u8 flags | u64 pts µs | data.
+ */
+object Udp {
+    const val VIDEO: Int = 0x01
+    const val FEEDBACK: Int = 0x81
+    const val NACK: Int = 0x82
+    const val NACK_WHOLE_FRAME = 0xFFFF
+    const val HEADER = 18
+    const val MAX_DATAGRAM = 1400
+    const val TOKEN_BYTES = 16
+    const val FEEDBACK_BYTES = 1 + TOKEN_BYTES + 1 + 4 + 4
+    const val FEEDBACK_KEYFRAME = 0x01
+}
+
+fun fragmentFrame(frameId: Long, ptsMicros: Long, flags: Int, data: ByteArray, maxDatagram: Int = Udp.MAX_DATAGRAM): List<ByteArray> {
+    val chunk = maxDatagram - Udp.HEADER
+    val count = maxOf(1, (data.size + chunk - 1) / chunk)
+    require(count <= 0xFFFF) { "frame too large" }
+    return List(count) { index ->
+        val start = index * chunk
+        val length = minOf(chunk, data.size - start)
+        val buffer = java.nio.ByteBuffer.allocate(Udp.HEADER + length)
+        buffer.put(Udp.VIDEO.toByte())
+        buffer.putInt(frameId.toInt())
+        buffer.putShort(index.toShort())
+        buffer.putShort(count.toShort())
+        buffer.put(flags.toByte())
+        buffer.putLong(ptsMicros)
+        buffer.put(data, start, length)
+        buffer.array()
+    }
+}
+
+class Feedback(val token: ByteArray, val flags: Int, val lastFrame: Long, val lost: Long) {
+    val wantsKeyframe get() = flags and Udp.FEEDBACK_KEYFRAME != 0
+}
+
+/**
+ * NACK: u8 type | 16 B token | u8 count | count x (u32 frame id, u16 index). Returns the token and
+ * the requested pieces, or null if malformed. Index [Udp.NACK_WHOLE_FRAME] means every piece.
+ */
+fun parseNack(data: ByteArray, length: Int): Pair<ByteArray, List<Pair<Long, Int>>>? {
+    val header = 1 + Udp.TOKEN_BYTES + 1
+    if (length < header || data[0].toInt() and 0xFF != Udp.NACK) return null
+    val buffer = java.nio.ByteBuffer.wrap(data, 0, length)
+    buffer.get()
+    val token = ByteArray(Udp.TOKEN_BYTES).also { buffer.get(it) }
+    val count = buffer.get().toInt() and 0xFF
+    if (length < header + count * 6) return null
+    val entries = List(count) { (buffer.getInt().toLong() and 0xFFFFFFFFL) to (buffer.getShort().toInt() and 0xFFFF) }
+    return token to entries
+}
+
+/** u8 type | 16 B token | u8 flags | u32 last frame id | u32 frames lost. Null if malformed. */
+fun parseFeedback(data: ByteArray, length: Int): Feedback? {
+    if (length < Udp.FEEDBACK_BYTES || data[0].toInt() and 0xFF != Udp.FEEDBACK) return null
+    val buffer = java.nio.ByteBuffer.wrap(data, 0, length)
+    buffer.get()
+    val token = ByteArray(Udp.TOKEN_BYTES).also { buffer.get(it) }
+    val flags = buffer.get().toInt() and 0xFF
+    val last = buffer.getInt().toLong() and 0xFFFFFFFFL
+    val lost = buffer.getInt().toLong() and 0xFFFFFFFFL
+    return Feedback(token, flags, last, lost)
+}

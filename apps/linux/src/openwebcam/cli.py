@@ -27,6 +27,7 @@ def main(argv: list[str] | None = None) -> int:
     stream.add_argument("--frames", type=int, default=0, help="stop after this many decoded frames")
     stream.add_argument("--snapshot", help="save the last frame as PNG when stopping")
     stream.add_argument("--camera", choices=("front", "back"), help="ask the phone to use this camera")
+    stream.add_argument("--tcp-only", action="store_true", help="send video over TCP instead of UDP")
 
     args, gtk_args = parser.parse_known_args(argv)
     logging.basicConfig(
@@ -97,6 +98,7 @@ def _stream(args: argparse.Namespace) -> int:
 
         def on_streaming(self, info, pipeline) -> None:
             print(f"Streaming from {info.device_name} ({info.width}x{info.height}) to {device or 'nowhere'}", flush=True)
+            GLib.timeout_add(1500, lambda: print(f"Video transport: {controller.session.transport}", flush=True) and False)
             if args.camera:
                 controller.set_camera(args.camera)
 
@@ -111,7 +113,10 @@ def _stream(args: argparse.Namespace) -> int:
                 result["exit"] = 1
             loop.quit()
 
-    controller = Controller(host, port, config.client_id, computer_name(), device, Events(), snapshots=bool(args.snapshot))
+    controller = Controller(
+        host, port, config.client_id, computer_name(), device, Events(),
+        snapshots=bool(args.snapshot), transports=("tcp",) if args.tcp_only else ("udp", "tcp"),
+    )
 
     def finish() -> None:
         pipeline = controller.pipeline

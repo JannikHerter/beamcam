@@ -38,6 +38,7 @@ class Controller:
         events: ControllerEvents,
         preview: bool = False,
         snapshots: bool = False,
+        transports: tuple[str, ...] = ("udp", "tcp"),
     ) -> None:
         self._device = device
         self._events = events
@@ -50,7 +51,7 @@ class Controller:
         self._ended = False
         self._pipeline_error: str | None = None
         self.info: StreamInfo | None = None
-        self.session = Session(host, port, client_id, client_name, self)
+        self.session = Session(host, port, client_id, client_name, self, transports=transports)
 
     @property
     def pipeline(self) -> Pipeline | None:

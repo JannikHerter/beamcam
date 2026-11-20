@@ -44,7 +44,8 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
   - `Protocol.kt`, `Orientation.kt`: wire format and rotation math (unit tested).
   - `MainActivity.kt`: Compose UI. It only reads `WebcamState` and sends intents to the service.
 - `apps/linux/src/openwebcam/`
-  - `protocol.py` mirrors `Protocol.kt`. `client.py` is one session. `mdns.py` finds phones.
+  - `protocol.py` mirrors `Protocol.kt`. `client.py` is one session (TCP control, UDP video).
+    `reassembly.py` rebuilds frames from UDP datagrams and decides what to NACK. `mdns.py` finds phones.
   - `pipeline.py`: GStreamer decode, rotate, fixed-size output, v4l2sink. `controller.py` joins session and pipeline.
   - `ui.py` (GTK) and `cli.py` (scripts and tests) are thin layers over the controller.
   - `virtualcam.py` and `data/setup-virtual-camera` find and create the v4l2loopback device.

@@ -24,6 +24,18 @@ disappears after `STALE_AFTER`; we do not rely on record TTLs, which are an hour
 The address shown on the phone and **Connect by Address…** are the fallback for networks that
 drop multicast.
 
+## Why video goes over UDP
+
+Measured on a real phone over Wi-Fi with simulated faults on the computer (`netem`, 30 s per run):
+TCP and UDP are equal on clean Wi-Fi, but after a Wi-Fi blip TCP replays its backlog and backs off
+(p95 delay ~600 ms, frozen 14 s of 30 under 0.5 s outages every 5 s) while UDP is current again at
+once (p95 36 ms, frozen 3.7 s). Reordering (jitter) drops TCP to 11 fps; UDP keeps 30.
+
+UDP without resending is worse than TCP: with 5% loss it fell to 1.6 fps, because a recovery
+keyframe is ~40 datagrams and almost never arrives whole. NACK-based resending fixes that (28 fps,
+p99 105 ms), and resending is skipped for gaps longer than ~165 ms, where it only delivers stale
+video. TCP stays as the fallback for networks that drop UDP.
+
 ## Video path
 
 - Camera2 renders straight into the encoder's input surface; no pixel data passes through app code.

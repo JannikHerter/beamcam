@@ -5,10 +5,12 @@ from __future__ import annotations
 import logging
 import socket
 import threading
+import time
 from dataclasses import dataclass
 from typing import Protocol as Interface
 
 from openwebcam import protocol
+from openwebcam.reassembly import Reassembler
 
 log = logging.getLogger(__name__)
 
@@ -17,6 +19,12 @@ CONNECT_TIMEOUT = 5.0
 APPROVAL_TIMEOUT = 75.0
 # Wi-Fi drops often leave a half-open socket, so silence this long means the phone is gone.
 STREAM_TIMEOUT = 8.0
+# UDP: the first FEEDBACK opens the path through the computer's firewall; the phone waits 1 s for it.
+PUNCH_INTERVAL = 0.1
+PUNCH_PHASE = 2.0
+FEEDBACK_INTERVAL = 1.0
+KEYFRAME_RETRY = 0.25
+TRANSPORTS = ("udp", "tcp")
 
 
 @dataclass(frozen=True)
@@ -84,9 +92,22 @@ def parse_address(text: str) -> tuple[str, int]:
 
 
 class Session:
-    def __init__(self, host: str, port: int, client_id: str, client_name: str, listener: SessionListener) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        client_id: str,
+        client_name: str,
+        listener: SessionListener,
+        transports: tuple[str, ...] = TRANSPORTS,
+    ) -> None:
         self.host = host
         self.port = port
+        self.transports = transports
+        #: "udp" once UDP video arrives, else "tcp".
+        self.transport = "tcp"
+        self._udp: socket.socket | None = None
+        self._last_video = time.monotonic()
         self._client_id = client_id
         self._client_name = client_name
         self._listener = listener
@@ -136,6 +157,8 @@ class Session:
         finally:
             if self._sock is not None:
                 self._sock.close()
+            if self._udp is not None:
+                self._udp.close()
         self._listener.on_end(CLOSED if self._closed.is_set() else reason)
 
     def _session(self) -> str:
@@ -149,10 +172,26 @@ class Session:
             return CLOSED
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1 << 20)
+        offered = ["tcp"]
+        if "udp" in self.transports and sock.family == socket.AF_INET:
+            try:
+                udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                # Keyframes arrive as a burst of ~70 datagrams; don't drop them in the kernel.
+                udp.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4 << 20)
+                udp.bind((sock.getsockname()[0], 0))
+                self._udp = udp
+                offered.insert(0, "udp")
+            except OSError as error:
+                log.info("UDP unavailable: %s", error)
         self._send(
             protocol.encode_json(
                 protocol.HELLO,
-                {"protocol": protocol.VERSION, "clientId": self._client_id, "clientName": self._client_name},
+                {
+                    "protocol": protocol.VERSION,
+                    "clientId": self._client_id,
+                    "clientName": self._client_name,
+                    "transports": offered,
+                },
             )
         )
         sock.settimeout(APPROVAL_TIMEOUT)
@@ -175,8 +214,19 @@ class Session:
                         facing=str(body.get("facing", "front")),
                     )
                 )
-                sock.settimeout(STREAM_TIMEOUT)
+                self._last_video = time.monotonic()
+                if self._udp is not None and "udpPort" in body:
+                    token = bytes.fromhex(str(body.get("udpToken", "")))
+                    peer = sock.getpeername()[0]
+                    # Video may now come over UDP, so TCP silence alone no longer means the phone is gone.
+                    sock.settimeout(None)
+                    threading.Thread(
+                        target=self._udp_loop, args=(peer, int(body["udpPort"]), token), name="udp", daemon=True
+                    ).start()
+                else:
+                    sock.settimeout(STREAM_TIMEOUT)
             elif message.type == protocol.VIDEO:
+                self._last_video = time.monotonic()
                 self._listener.on_frame(protocol.decode_video(message.payload))
             elif message.type == protocol.CAMERA:
                 body = message.json()
@@ -186,3 +236,69 @@ class Session:
             elif message.type == protocol.END:
                 return str(message.json().get("reason", "stopped"))
             # Unknown types are skipped so newer phones can add messages.
+
+    def _udp_loop(self, peer: str, port: int, token: bytes) -> None:
+        """Receive UDP video, send FEEDBACK (heartbeat and keyframe requests), and watch liveness
+        for both transports: if the phone fell back to TCP, its video still updates _last_video."""
+        udp = self._udp
+        assert udp is not None
+        udp.settimeout(0.02)
+        reassembler = Reassembler()
+        started = time.monotonic()
+        next_feedback = started
+        last_request = 0.0
+        receiving = False
+        first_packet = 0.0
+        while not self._closed.is_set():
+            now = time.monotonic()
+            # Ask only after a loss, or if the phone's first keyframe never completes.
+            want_keyframe = (
+                receiving
+                and reassembler.waiting_for_keyframe
+                and (reassembler.losses > 0 or now - first_packet > 1.0)
+                and now - last_request > KEYFRAME_RETRY
+            )
+            if (receiving or now - started < PUNCH_PHASE) and (now >= next_feedback or want_keyframe):
+                if want_keyframe:
+                    last_request = now
+                flags = protocol.FEEDBACK_KEYFRAME if want_keyframe else 0
+                try:
+                    udp.sendto(protocol.encode_feedback(token, flags, reassembler.last_frame, reassembler.losses), (peer, port))
+                except OSError as error:
+                    log.debug("feedback failed: %s", error)
+                next_feedback = now + (FEEDBACK_INTERVAL if receiving else PUNCH_INTERVAL)
+            try:
+                data, (source, _port) = udp.recvfrom(2048)
+            except TimeoutError:
+                frames = reassembler.poll(time.monotonic())
+            except OSError:
+                return  # socket closed by _run
+            else:
+                fragment = protocol.parse_fragment(data) if source == peer else None
+                if fragment is None:
+                    continue
+                if not receiving:
+                    receiving = True
+                    first_packet = time.monotonic()
+                    self.transport = "udp"
+                    log.info("receiving video over UDP")
+                now = time.monotonic()
+                self._last_video = now
+                frames = reassembler.add(fragment, now)
+            missing = reassembler.missing(time.monotonic())
+            if missing:
+                try:
+                    udp.sendto(protocol.encode_nack(token, missing), (peer, port))
+                except OSError as error:
+                    log.debug("nack failed: %s", error)
+            for frame in frames:
+                self._listener.on_frame(frame)
+            if time.monotonic() - self._last_video > STREAM_TIMEOUT:
+                log.info("no video from %s for %.0f s", peer, STREAM_TIMEOUT)
+                sock = self._sock
+                if sock is not None:
+                    try:
+                        sock.shutdown(socket.SHUT_RDWR)
+                    except OSError:
+                        pass
+                return

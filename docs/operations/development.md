@@ -48,8 +48,12 @@ cameras and, when a writable v4l2loopback device exists, writes to it and reads 
 GStreamer and ffmpeg like a video app would. Pass `--launch` to start the app with `adb`; otherwise
 open it yourself after the install step. The first run needs a tap on **Allow** in the emulator.
 
-What it cannot cover: discovery over a real Wi-Fi network, a real phone's encoder, and the
-`pkexec` prompt. Check those by hand before a release.
+adb forwards only TCP, so on the emulator video always takes the TCP fallback ("Video transport:
+tcp"); the UDP path needs a real phone on the same network. With several devices attached, set
+`ANDROID_SERIAL=emulator-5554`.
+
+What it cannot cover: discovery over a real Wi-Fi network, a real phone's encoder, UDP video, and
+the `pkexec` prompt. Check those by hand before a release.
 
 ## Real phone and a real browser
 
