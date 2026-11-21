@@ -137,6 +137,7 @@ public sealed class Controller : ISessionListener
         output?.Dispose();
         if (OutputError is not null && reason == EndReasons.Closed)
             reason = EndReasons.VideoError;
+        Log.Info($"session ended: {reason}");
         _events.OnEnded(reason);
     }
 }

@@ -180,6 +180,7 @@ public partial class MainWindow : Window, IControllerEvents
         if (_controller is not null)
             return;
         _autoConnectAllowed = false;
+        Log.Info($"connecting to {host}:{port} ({(reconnecting ? "reconnect" : user ? "user" : "automatic")})");
         if (!reconnecting)
             _reconnector.Connecting(new Target(host, port, name, phoneId), user);
         ShowConnecting(Text.Format(reconnecting ? "ReconnectingTo" : "ConnectingTo", name));
