@@ -109,13 +109,18 @@ int Stream()
     NativeVideoOutput? output = null;
     var config = Config.Load();
     Controller? controller = null;
+    var cameraRequested = false;
     var events = new Events(
         code => Console.WriteLine($"Waiting for you to tap Allow on the phone. It shows the code {code}."),
-        info =>
+        info => Console.WriteLine($"Streaming from {info.DeviceName} ({info.Width}x{info.Height}) to {(camera is null ? "nowhere" : "the Beamcam camera")}"),
+        current =>
         {
-            Console.WriteLine($"Streaming from {info.DeviceName} ({info.Width}x{info.Height}) to {(camera is null ? "nowhere" : "the Beamcam camera")}");
-            if (facing is not null)
+            // The phone ignores SET_CAMERA until its camera runs, which its first CAMERA message announces.
+            if (facing is not null && current != facing && !cameraRequested)
+            {
+                cameraRequested = true;
                 controller!.SetCamera(facing);
+            }
         },
         reason =>
         {
@@ -185,10 +190,10 @@ int Stream()
     return exit;
 }
 
-sealed class Events(Action<string> pending, Action<StreamInfo> streaming, Action<string> ended) : IControllerEvents
+sealed class Events(Action<string> pending, Action<StreamInfo> streaming, Action<string> camera, Action<string> ended) : IControllerEvents
 {
     public void OnPending(string code) => pending(code);
     public void OnStreaming(StreamInfo info) => streaming(info);
-    public void OnCamera(string facing) { }
+    public void OnCamera(string facing) => camera(facing);
     public void OnEnded(string reason) => ended(reason);
 }
