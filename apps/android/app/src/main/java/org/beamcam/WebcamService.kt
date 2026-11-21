@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.hardware.display.DisplayManager
@@ -65,6 +66,23 @@ class WebcamService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    override fun attachBaseContext(newBase: Context) = super.attachBaseContext(AppLanguage.wrap(newBase))
+
+    /** Texts in the current language. Before Android 13 a change does not reach the attached context. */
+    private fun text(id: Int, vararg args: Any): String = AppLanguage.wrap(this).getString(id, *args)
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // The language may have changed: show the notification in the new one.
+        refreshTexts()
+    }
+
+    private fun refreshTexts() {
+        if (serverSocket == null) return
+        createChannels()
+        notifyStatus((WebcamState.state.value.status as? WebcamStatus.Streaming)?.computerName)
+    }
+
     override fun onCreate() {
         super.onCreate()
         settings = Settings(this)
@@ -80,6 +98,7 @@ class WebcamService : Service() {
             ACTION_ALLOW -> WebcamState.respondToApproval(true)
             ACTION_DENY -> WebcamState.respondToApproval(false)
             ACTION_DISCONNECT -> activeSession?.close(Protocol.EndReason.STOPPED)
+            ACTION_LANGUAGE -> refreshTexts()
             ACTION_FORGOT -> activeSession?.let { session ->
                 // A computer the user just removed must not keep using the camera.
                 val identity = session.identity
@@ -247,7 +266,7 @@ class WebcamService : Service() {
                 }
                 val transports = json.optJSONArray("transports")
                 val wantsUdp = transports != null && (0 until transports.length()).any { transports.optString(it) == "udp" }
-                val clientName = json.optString("clientName").ifBlank { getString(R.string.unknown_computer) }.take(64)
+                val clientName = json.optString("clientName").ifBlank { text(R.string.unknown_computer) }.take(64)
                 val presented = Secure.fromHex(json.optString("secret"))?.takeIf { it.size == Secure.SECRET_BYTES }
                 identity = presented?.let { Secure.sha256(it).toHex() }
                 if (identity != null && !settings.isAllowed(identity!!)) {
@@ -410,7 +429,7 @@ class WebcamService : Service() {
                 onFrame = ::onEncodedFrame,
                 onError = { error ->
                     Log.e(TAG, "camera: $error")
-                    WebcamState.update { it.copy(message = getString(R.string.error_camera, error)) }
+                    WebcamState.update { it.copy(message = text(R.string.error_camera, error)) }
                     close(Protocol.EndReason.CAMERA)
                 },
             ).also { it.start(facing) { sendOrientation(force = true) } }
@@ -538,10 +557,10 @@ class WebcamService : Service() {
     private fun createChannels() {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_STATUS, getString(R.string.channel_status), NotificationManager.IMPORTANCE_LOW),
+            NotificationChannel(CHANNEL_STATUS, text(R.string.channel_status), NotificationManager.IMPORTANCE_LOW),
         )
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_REQUESTS, getString(R.string.channel_requests), NotificationManager.IMPORTANCE_HIGH),
+            NotificationChannel(CHANNEL_REQUESTS, text(R.string.channel_requests), NotificationManager.IMPORTANCE_HIGH),
         )
     }
 
@@ -552,13 +571,13 @@ class WebcamService : Service() {
             .setOngoing(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
         if (streamingTo == null) {
-            builder.setContentTitle(getString(R.string.notification_ready_title))
-                .setContentText(getString(R.string.notification_ready_text))
-                .addAction(0, getString(R.string.action_turn_off), serviceIntent(ACTION_STOP, 1))
+            builder.setContentTitle(text(R.string.notification_ready_title))
+                .setContentText(text(R.string.notification_ready_text))
+                .addAction(0, text(R.string.action_turn_off), serviceIntent(ACTION_STOP, 1))
         } else {
-            builder.setContentTitle(getString(R.string.notification_streaming_title, streamingTo))
-                .setContentText(getString(R.string.notification_streaming_text))
-                .addAction(0, getString(R.string.action_stop_streaming), serviceIntent(ACTION_DISCONNECT, 2))
+            builder.setContentTitle(text(R.string.notification_streaming_title, streamingTo))
+                .setContentText(text(R.string.notification_streaming_text))
+                .addAction(0, text(R.string.action_stop_streaming), serviceIntent(ACTION_DISCONNECT, 2))
         }
         return builder.build()
     }
@@ -571,14 +590,14 @@ class WebcamService : Service() {
         if (WebcamState.appVisible || !canNotify()) return
         val notification = NotificationCompat.Builder(this, CHANNEL_REQUESTS)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(getString(R.string.approval_title, computerName))
-            .setContentText(getString(R.string.approval_text, code))
+            .setContentTitle(text(R.string.approval_title, computerName))
+            .setContentText(text(R.string.approval_text, code))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setContentIntent(openAppIntent())
             .setAutoCancel(true)
-            .addAction(0, getString(R.string.action_allow), serviceIntent(ACTION_ALLOW, 3))
-            .addAction(0, getString(R.string.action_deny), serviceIntent(ACTION_DENY, 4))
+            .addAction(0, text(R.string.action_allow), serviceIntent(ACTION_ALLOW, 3))
+            .addAction(0, text(R.string.action_deny), serviceIntent(ACTION_DENY, 4))
             .build()
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION_APPROVAL, notification)
     }
@@ -627,6 +646,7 @@ class WebcamService : Service() {
         private const val ACTION_DENY = "org.beamcam.DENY"
         private const val ACTION_DISCONNECT = "org.beamcam.DISCONNECT"
         private const val ACTION_FORGOT = "org.beamcam.FORGOT"
+        private const val ACTION_LANGUAGE = "org.beamcam.LANGUAGE"
         private const val ACTION_SET_FACING = "org.beamcam.SET_FACING"
         private const val EXTRA_FACING = "facing"
 
@@ -638,6 +658,10 @@ class WebcamService : Service() {
 
         fun disconnect(context: Context) =
             context.startService(Intent(context, WebcamService::class.java).setAction(ACTION_DISCONNECT))
+
+        /** Before Android 13 a running service has to be told that the app's language changed. */
+        fun languageChanged(context: Context) =
+            context.startService(Intent(context, WebcamService::class.java).setAction(ACTION_LANGUAGE))
 
         /** Tells a running service that computers were removed; it stops one that is streaming. */
         fun forgotComputers(context: Context) =

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Beamcam</string>
+    <string name="app_name" translatable="false">Beamcam</string>
     <string name="unknown_computer">A computer</string>
 
     <string name="permission_title">Use your phone as a webcam</string>
@@ -32,6 +32,8 @@
     <string name="action_deny">Don’t allow</string>
 
     <string name="menu_more">More</string>
+    <string name="menu_language">Language</string>
+    <string name="language_system">Same as this phone (%1$s)</string>
     <string name="menu_allowed_computers">Allowed computers</string>
     <string name="allowed_title">Allowed computers</string>
     <string name="allowed_text">These computers can use your camera without asking. Remove one to make it ask again.</string>

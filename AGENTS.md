@@ -48,12 +48,14 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
   - `Identity.kt`: the phone's TLS key in the Android keystore. `Secure.kt`: pairing code and UDP sealing.
   - `Protocol.kt`, `Orientation.kt`: wire format and rotation math (unit tested).
   - `MainActivity.kt`: Compose UI. It only reads `WebcamState` and sends intents to the service.
+  - `AppLanguage.kt`: the language picked in the app; translations are in `res/values-*/strings.xml`.
 - `apps/linux/src/beamcam/`
   - `protocol.py` mirrors `Protocol.kt`, `secure.py` mirrors `Secure.kt`. `client.py` is one session
     (TLS control, sealed UDP video); `config.py` keeps the pairings.
     `reassembly.py` rebuilds frames from UDP datagrams and decides what to NACK. `mdns.py` finds phones.
   - `pipeline.py`: GStreamer decode, rotate, fixed-size output, v4l2sink. `controller.py` joins session and pipeline.
   - `reconnect.py` decides whether and where to reconnect (follows the phone's id through mDNS).
+  - `i18n.py` and `locale/*.po`: translations for the window.
   - `ui.py` (GTK) and `cli.py` (scripts and tests) are thin layers over the controller. Only the
     window reconnects; the CLI exits so scripts see the failure.
   - `virtualcam.py` and `data/setup-virtual-camera` find and create the v4l2loopback device.
@@ -88,11 +90,12 @@ Before calling work done, say which of these applied:
   pairing has "Paired Phones" (forget one or all), setting up the virtual camera has "Remove Virtual Camera"
   on Linux; on Windows the camera lives only while the app runs and the uninstaller removes the rest.
 - **Orientation and both cameras.** Portrait, landscape, front and back all produce an upright picture.
+- **Every language.** New or changed text needs its German version too; the tests catch gaps on the computer, lint on the phone.
 - **Docs.** Check whether the change makes `docs/user` guidance wrong.
 
 ## Verifying
 
-- Android unit tests: `cd apps/android && ./gradlew testDebugUnitTest`
+- Android unit tests and lint (lint fails on a missing translation): `cd apps/android && ./gradlew testDebugUnitTest lintDebug`
 - Linux unit tests: `cd apps/linux && PYTHONPATH=src python3 -m unittest discover -s tests -t .`
 - Windows unit tests: `cd apps/windows && dotnet test tests/Beamcam.Core.Tests` (runs on Linux too, see
   [development](docs/operations/development.md#windows)) and `native/tests/convert_tests.cpp`.
@@ -114,6 +117,8 @@ Before calling work done, say which of these applied:
 - Never roll your own crypto. TLS comes from the platform (Conscrypt, Python `ssl`, .NET `SslStream`),
   AES-GCM from JCA, python-cryptography and .NET `AesGcm`; pairing rules live in `docs/internals/protocol.md`.
 - Default to no comment. Write one only for a constraint, an external quirk or an invariant the code can't show.
+- User-facing text is translated: `strings.xml` on the phone, `_()` on the computer, and every
+  language updated in the same change (see [translations](docs/operations/development.md#translations)).
 - User-facing text is short, friendly and tells people what to do. Use “Allow”, not “Authorize”;
   “Wi-Fi”, not “LAN”. Don't name other products (say “your video call”, not a brand); code
   comments and internal docs may, where they record a real compatibility fact.

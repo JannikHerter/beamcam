@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import sys
 import threading
 
 import gi
@@ -12,16 +14,16 @@ gi.require_version("Adw", "1")
 gi.require_version("Gst", "1.0")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
-from beamcam import APP_ID, __version__, virtualcam  # noqa: E402
+from beamcam import APP_ID, __version__, i18n, virtualcam  # noqa: E402
 from beamcam.client import CLOSED, StreamInfo, end_message, parse_address  # noqa: E402
 from beamcam.config import Config, PairedPhone, computer_name  # noqa: E402
 from beamcam.controller import Controller  # noqa: E402
+from beamcam.i18n import _  # noqa: E402
 from beamcam.mdns import Browser, Phone  # noqa: E402
 from beamcam.pipeline import Pipeline, missing_elements  # noqa: E402
 from beamcam.reconnect import Reconnector, Target  # noqa: E402
 
 log = logging.getLogger(__name__)
-
 
 
 def _last_connected(timestamp: int) -> str | None:
@@ -30,8 +32,8 @@ def _last_connected(timestamp: int) -> str | None:
     when = GLib.DateTime.new_from_unix_local(timestamp)
     now = GLib.DateTime.new_now_local()
     if (when.get_year(), when.get_day_of_year()) == (now.get_year(), now.get_day_of_year()):
-        return when.format("Last connected today at %R")
-    return when.format("Last connected on %x")
+        return _("Last connected today at {time}").format(time=when.format("%R"))
+    return _("Last connected on {date}").format(date=when.format("%x"))
 
 
 class Window(Adw.ApplicationWindow):
@@ -60,11 +62,12 @@ class Window(Adw.ApplicationWindow):
 
         header = Adw.HeaderBar()
         menu = Gio.Menu()
-        menu.append("Connect by Address…", "win.connect-address")
-        menu.append("Paired Phones", "win.paired-phones")
-        menu.append("Remove Virtual Camera…", "win.remove-camera")
-        menu.append("About Beamcam", "win.about")
-        header.pack_end(Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu, tooltip_text="Main Menu"))
+        menu.append(_("Connect by Address…"), "win.connect-address")
+        menu.append(_("Paired Phones"), "win.paired-phones")
+        menu.append(_("Remove Virtual Camera…"), "win.remove-camera")
+        menu.append(_("Language…"), "win.language")
+        menu.append(_("About Beamcam"), "win.about")
+        header.pack_end(Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu, tooltip_text=_("Main Menu")))
         view = Adw.ToolbarView()
         view.add_top_bar(header)
         view.set_content(self.toasts)
@@ -74,6 +77,7 @@ class Window(Adw.ApplicationWindow):
             ("connect-address", self._ask_address),
             ("paired-phones", self._show_paired_phones),
             ("remove-camera", self._confirm_remove_camera),
+            ("language", self._choose_language),
             ("about", self._show_about),
         ):
             action = Gio.SimpleAction.new(name, None)
@@ -88,7 +92,11 @@ class Window(Adw.ApplicationWindow):
 
         missing = missing_elements(preview=True)
         if missing:
-            self.toast(f"Missing video components: {', '.join(missing)}. Install gst-plugins-good, gst-libav and gst-plugin-gtk4.")
+            self.toast(
+                _("Missing video components: {names}. Install gst-plugins-good, gst-libav and gst-plugin-gtk4.").format(
+                    names=", ".join(missing)
+                )
+            )
 
     # Pages
 
@@ -100,7 +108,7 @@ class Window(Adw.ApplicationWindow):
         self.phone_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE, width_request=340)
         self.phone_list.add_css_class("boxed-list")
         box.append(self.phone_list)
-        manual = Gtk.Button(label="Connect by Address…", halign=Gtk.Align.CENTER)
+        manual = Gtk.Button(label=_("Connect by Address…"), halign=Gtk.Align.CENTER)
         manual.add_css_class("pill")
         manual.connect("clicked", lambda _b: self._ask_address())
         box.append(manual)
@@ -111,7 +119,7 @@ class Window(Adw.ApplicationWindow):
         self.connecting_status = Adw.StatusPage(icon_name="phone-symbolic", vexpand=True)
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24, halign=Gtk.Align.CENTER)
         box.append(Gtk.Spinner(spinning=True, width_request=32, height_request=32))
-        cancel = Gtk.Button(label="Cancel")
+        cancel = Gtk.Button(label=_("Cancel"))
         cancel.add_css_class("pill")
         cancel.connect("clicked", lambda _b: self.disconnect())
         box.append(cancel)
@@ -132,9 +140,9 @@ class Window(Adw.ApplicationWindow):
         labels.append(self.streaming_title)
         labels.append(self.streaming_hint)
 
-        switch = Gtk.Button(label="Switch Camera", valign=Gtk.Align.CENTER)
+        switch = Gtk.Button(label=_("Switch Camera"), valign=Gtk.Align.CENTER)
         switch.connect("clicked", lambda _b: self._switch_camera())
-        stop = Gtk.Button(label="Disconnect", valign=Gtk.Align.CENTER)
+        stop = Gtk.Button(label=_("Disconnect"), valign=Gtk.Align.CENTER)
         stop.add_css_class("destructive-action")
         stop.connect("clicked", lambda _b: self.disconnect())
 
@@ -155,13 +163,13 @@ class Window(Adw.ApplicationWindow):
         camera = virtualcam.find_camera()
         self.camera = camera if camera and camera.writable else None
         if camera and not camera.writable:
-            self._banner("Your user can’t write to the virtual camera.", "Details", "permission")
+            self._banner(_("Your user can’t write to the virtual camera."), _("Details"), "permission")
         elif camera:
             self.banner.set_revealed(False)
         elif virtualcam.module_installed():
-            self._banner("Set up the virtual camera so other apps can use your phone.", "Set Up", "setup")
+            self._banner(_("Set up the virtual camera so other apps can use your phone."), _("Set Up"), "setup")
         else:
-            self._banner("The virtual camera driver (v4l2loopback) isn’t installed.", "How to Install", "install")
+            self._banner(_("The virtual camera driver (v4l2loopback) isn’t installed."), _("How to Install"), "install")
 
     def _banner(self, title: str, button: str, kind: str) -> None:
         self.banner.set_title(title)
@@ -176,9 +184,11 @@ class Window(Adw.ApplicationWindow):
             self._show_install_help()
         else:
             self._alert(
-                "No Permission",
-                f"Beamcam can’t write to {virtualcam.find_camera().path}. "
-                "Add your user to the “video” group, then log out and back in:\n\nsudo usermod -aG video $USER",
+                _("No Permission"),
+                _(
+                    "Beamcam can’t write to {path}. Add your user to the “video” group, then log out and back in:"
+                ).format(path=virtualcam.find_camera().path)
+                + "\n\nsudo usermod -aG video $USER",
             )
 
     def _run_camera_helper(self, remove: bool) -> None:
@@ -192,42 +202,43 @@ class Window(Adw.ApplicationWindow):
             self.banner.set_sensitive(True)
             self.refresh_camera_state()
             if ok:
-                self.toast("Virtual camera removed." if remove else "Virtual camera is ready.")
+                self.toast(_("Virtual camera removed.") if remove else _("Virtual camera is ready."))
             elif error:
-                self._alert("Couldn’t Change the Virtual Camera", error)
+                self._alert(_("Couldn’t Change the Virtual Camera"), _(error))
 
         threading.Thread(target=work, daemon=True).start()
 
     def _show_install_help(self) -> None:
         command = virtualcam.install_command()
         body = (
-            "Beamcam needs the v4l2loopback driver to create a camera other apps can use. "
-            + ("Install it by running this in a terminal, then restart your computer:" if command else
-               "Install the “v4l2loopback” package with your distribution’s software tool, then restart your computer.")
+            _("Beamcam needs the v4l2loopback driver to create a camera other apps can use.")
+            + " "
+            + (_("Install it by running this in a terminal, then restart your computer:") if command else
+               _("Install the “v4l2loopback” package with your distribution’s software tool, then restart your computer."))
         )
-        dialog = Adw.AlertDialog(heading="Install the Virtual Camera Driver", body=body)
+        dialog = Adw.AlertDialog(heading=_("Install the Virtual Camera Driver"), body=body)
         if command:
             label = Gtk.Label(label=command, selectable=True, wrap=True, css_classes=["monospace", "card"])
             label.set_margin_top(6)
             for side in ("start", "end", "bottom"):
                 getattr(label, f"set_margin_{side}")(6)
             dialog.set_extra_child(label)
-            dialog.add_response("copy", "Copy Command")
-        dialog.add_response("check", "Check Again")
-        dialog.add_response("close", "Close")
+            dialog.add_response("copy", _("Copy Command"))
+        dialog.add_response("check", _("Check Again"))
+        dialog.add_response("close", _("Close"))
         dialog.set_default_response("check")
 
         def on_response(_dialog, response: str) -> None:
             if response == "copy" and command:
                 self.get_clipboard().set(command)
-                self.toast("Command copied.")
+                self.toast(_("Command copied."))
             self.refresh_camera_state()
 
         dialog.connect("response", on_response)
         dialog.present(self)
 
     def _show_paired_phones(self) -> None:
-        dialog = Adw.Dialog(title="Paired Phones", content_width=440, content_height=420)
+        dialog = Adw.Dialog(title=_("Paired Phones"), content_width=440, content_height=420)
 
         def forget(phones: list[PairedPhone], message: str) -> None:
             target = self.reconnector.target
@@ -248,29 +259,31 @@ class Window(Adw.ApplicationWindow):
                 view.set_content(
                     Adw.StatusPage(
                         icon_name="phone-symbolic",
-                        title="No Paired Phones",
-                        description="Phones you connect to show up here.",
+                        title=_("No Paired Phones"),
+                        description=_("Phones you connect to show up here."),
                     )
                 )
                 dialog.set_child(view)
                 return
             page = Adw.PreferencesPage()
             group = Adw.PreferencesGroup(
-                description="These phones let this computer in without asking. If you forget one, click Connect "
-                "and tap Allow on the phone to use it again."
+                description=_(
+                    "These phones let this computer in without asking. If you forget one, click Connect "
+                    "and tap Allow on the phone to use it again."
+                )
             )
             for phone in phones:
                 row = Adw.ActionRow(title=GLib.markup_escape_text(phone.name), subtitle=_last_connected(phone.last_connected))
                 row.add_prefix(Gtk.Image(icon_name="phone-symbolic"))
-                button = Gtk.Button(label="Forget", valign=Gtk.Align.CENTER, css_classes=["flat"])
-                button.connect("clicked", lambda _b, p=phone: forget([p], f"“{p.name}” forgotten."))
+                button = Gtk.Button(label=_("Forget"), valign=Gtk.Align.CENTER, css_classes=["flat"])
+                button.connect("clicked", lambda _b, p=phone: forget([p], _("“{name}” forgotten.").format(name=p.name)))
                 row.add_suffix(button)
                 group.add(row)
             page.add(group)
             if len(phones) > 1:
                 all_group = Adw.PreferencesGroup()
-                button = Gtk.Button(label="Forget All", halign=Gtk.Align.CENTER, css_classes=["destructive-action", "pill"])
-                button.connect("clicked", lambda _b: forget(phones, "Paired phones forgotten."))
+                button = Gtk.Button(label=_("Forget All"), halign=Gtk.Align.CENTER, css_classes=["destructive-action", "pill"])
+                button.connect("clicked", lambda _b: forget(phones, _("Paired phones forgotten.")))
                 all_group.add(button)
                 page.add(all_group)
             view.set_content(page)
@@ -279,14 +292,58 @@ class Window(Adw.ApplicationWindow):
         render()
         dialog.present(self)
 
+    def _choose_language(self) -> None:
+        dialog = Adw.AlertDialog(
+            heading=_("Language"),
+            body=_("Beamcam restarts to switch the language. A running stream stops."),
+        )
+        system = i18n.LANGUAGES[i18n.system_language()]
+        options = [(None, _("Same as this computer ({language})").format(language=system))]
+        options += list(i18n.LANGUAGES.items())
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        group = None
+        buttons = []
+        for code, label in options:
+            button = Gtk.CheckButton(label=label, group=group, active=code == self.config.language)
+            group = group or button
+            buttons.append((code, button))
+            box.append(button)
+        dialog.set_extra_child(box)
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("restart", _("Restart Beamcam"))
+        dialog.set_response_appearance("restart", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("restart")
+
+        def on_response(_dialog, response: str) -> None:
+            chosen = next(code for code, button in buttons if button.get_active())
+            if response != "restart" or chosen == self.config.language:
+                return
+            self.config.language = chosen
+            self.config.save()
+            self._restart()
+
+        dialog.connect("response", on_response)
+        dialog.present(self)
+
+    def _restart(self) -> None:
+        """A new process, so GTK's own texts switch language too. Sockets close on exec."""
+        self._on_close(self)
+        try:
+            os.execv(sys.executable, [sys.executable, "-m", "beamcam"])
+        except OSError as error:
+            log.warning("restart failed: %s", error)
+            self.toast(_("Close and open Beamcam to use the new language."))
+
     def _confirm_remove_camera(self) -> None:
         dialog = Adw.AlertDialog(
-            heading="Remove the Virtual Camera?",
-            body="Other apps will no longer see the “Beamcam” camera, and it won’t come back after a restart. "
-            "You can set it up again at any time.",
+            heading=_("Remove the Virtual Camera?"),
+            body=_(
+                "Other apps will no longer see the “Beamcam” camera, and it won’t come back after a restart. "
+                "You can set it up again at any time."
+            ),
         )
-        dialog.add_response("cancel", "Cancel")
-        dialog.add_response("remove", "Remove")
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("remove", _("Remove"))
         dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
 
         def on_response(_dialog, response: str) -> None:
@@ -317,10 +374,10 @@ class Window(Adw.ApplicationWindow):
         while (row := self.phone_list.get_first_child()) is not None:
             self.phone_list.remove(row)
         for phone in self.phones:
-            subtitle = f"Paired · {phone.host}" if self.config.is_paired(phone.id) else phone.host
+            subtitle = _("Paired · {address}").format(address=phone.host) if self.config.is_paired(phone.id) else phone.host
             row = Adw.ActionRow(title=GLib.markup_escape_text(phone.name), subtitle=subtitle, activatable=True)
             row.add_prefix(Gtk.Image(icon_name="phone-symbolic"))
-            button = Gtk.Button(label="Connect", valign=Gtk.Align.CENTER, css_classes=["suggested-action"])
+            button = Gtk.Button(label=_("Connect"), valign=Gtk.Align.CENTER, css_classes=["suggested-action"])
             button.connect("clicked", lambda _b, p=phone: self.connect_to(p.host, p.port, p.name, p.id))
             row.add_suffix(button)
             row.set_activatable_widget(button)
@@ -329,25 +386,27 @@ class Window(Adw.ApplicationWindow):
         self.phone_list.set_visible(found)
         self.searching_spinner.set_visible(not found)
         if found:
-            self.phones_status.set_title("Choose Your Phone")
+            self.phones_status.set_title(_("Choose Your Phone"))
             self.phones_status.set_description(None)
         else:
-            self.phones_status.set_title("Looking for Your Phone…")
+            self.phones_status.set_title(_("Looking for Your Phone…"))
             self.phones_status.set_description(
-                "Open <b>Beamcam</b> on your Android phone.\nYour phone and this computer need to be on the same Wi-Fi."
+                _("Open <b>Beamcam</b> on your Android phone.")
+                + "\n"
+                + _("Your phone and this computer need to be on the same Wi-Fi.")
             )
 
     # Connecting and streaming
 
     def _ask_address(self) -> None:
         dialog = Adw.AlertDialog(
-            heading="Connect by Address",
-            body="Type the address shown in the Beamcam app on your phone.",
+            heading=_("Connect by Address"),
+            body=_("Type the address shown in the Beamcam app on your phone."),
         )
         entry = Gtk.Entry(placeholder_text="192.168.1.23", activates_default=True, text=self.config.last_address or "")
         dialog.set_extra_child(entry)
-        dialog.add_response("cancel", "Cancel")
-        dialog.add_response("connect", "Connect")
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("connect", _("Connect"))
         dialog.set_response_appearance("connect", Adw.ResponseAppearance.SUGGESTED)
         dialog.set_default_response("connect")
 
@@ -358,7 +417,7 @@ class Window(Adw.ApplicationWindow):
             try:
                 host, port = parse_address(text)
             except ValueError:
-                self.toast("That doesn’t look like an address. It should look like 192.168.1.23")
+                self.toast(_("That doesn’t look like an address. It should look like {example}").format(example="192.168.1.23"))
                 return
             self.config.last_address = text.strip()
             self.config.save()
@@ -376,7 +435,8 @@ class Window(Adw.ApplicationWindow):
         if not reconnecting:
             self.reconnector.connecting(Target(host, port, name, phone_id), user=user)
         self.refresh_camera_state()
-        self.connecting_status.set_title(f"Reconnecting to {name}…" if reconnecting else f"Connecting to {name}…")
+        title = _("Reconnecting to {name}…") if reconnecting else _("Connecting to {name}…")
+        self.connecting_status.set_title(title.format(name=name))
         self.connecting_status.set_description(None)
         self.stack.set_visible_child_name("connecting")
         device = self.camera.path if self.camera else None
@@ -410,10 +470,11 @@ class Window(Adw.ApplicationWindow):
     # ControllerEvents (main thread)
 
     def on_pending(self, code: str) -> None:
-        self.connecting_status.set_title("Tap “Allow” on Your Phone")
+        self.connecting_status.set_title(_("Tap “Allow” on Your Phone"))
         self.connecting_status.set_description(
-            f"Your phone is asking whether “{GLib.markup_escape_text(computer_name())}” may use its camera.\n"
-            f"It shows the code <b>{code}</b>, the same as here."
+            _("Your phone is asking whether “{name}” may use its camera.").format(name=GLib.markup_escape_text(computer_name()))
+            + "\n"
+            + _("It shows the code <b>{code}</b>, the same as here.").format(code=code)
         )
 
     def on_camera(self, facing: str) -> None:
@@ -426,11 +487,13 @@ class Window(Adw.ApplicationWindow):
             self.config.last_phone_id = info.device_id
             self.config.save()
         self.picture.set_paintable(pipeline.paintable)
-        self.streaming_title.set_label(f"Streaming from {info.device_name}")
+        self.streaming_title.set_label(_("Streaming from {name}").format(name=info.device_name))
         if self.camera:
-            self.streaming_hint.set_label(f"Choose “{self.camera.label}” as the camera in your video call, browser or any other app.")
+            self.streaming_hint.set_label(
+                _("Choose “{camera}” as the camera in your video call, browser or any other app.").format(camera=self.camera.label)
+            )
         else:
-            self.streaming_hint.set_label("Preview only: set up the virtual camera to use your phone in other apps.")
+            self.streaming_hint.set_label(_("Preview only: set up the virtual camera to use your phone in other apps."))
         self.stack.set_visible_child_name("streaming")
 
     def on_ended(self, reason: str) -> None:
@@ -439,8 +502,8 @@ class Window(Adw.ApplicationWindow):
         retry = self.reconnector.ended(reason)
         if retry is not None:
             target, delay = retry
-            self.connecting_status.set_title(f"Reconnecting to {target.name}…")
-            self.connecting_status.set_description("The connection dropped. Trying again…")
+            self.connecting_status.set_title(_("Reconnecting to {name}…").format(name=target.name))
+            self.connecting_status.set_description(_("The connection dropped. Trying again…"))
             self.stack.set_visible_child_name("connecting")
             self.browser.refresh()  # find the phone again in case its address changed
             self.reconnect_source = GLib.timeout_add(int(delay * 1000), self._reconnect)
@@ -467,7 +530,7 @@ class Window(Adw.ApplicationWindow):
 
     def _alert(self, heading: str, body: str) -> None:
         dialog = Adw.AlertDialog(heading=heading, body=body)
-        dialog.add_response("ok", "OK")
+        dialog.add_response("ok", _("OK"))
         dialog.present(self)
 
     def _show_about(self) -> None:
@@ -475,7 +538,7 @@ class Window(Adw.ApplicationWindow):
             application_name="Beamcam",
             application_icon=APP_ID,
             version=__version__,
-            comments="Use your Android phone as a webcam.",
+            comments=_("Use your Android phone as a webcam."),
         ).present(self)
 
     def _on_close(self, _window) -> bool:

@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Protocol as Interface
 
 from beamcam import protocol, secure
+from beamcam.i18n import N_, _
 from beamcam.reassembly import Reassembler
 
 log = logging.getLogger(__name__)
@@ -60,23 +61,24 @@ UNKNOWN_PHONE = "unknown-phone"
 FORGOTTEN = "unknown"
 
 END_MESSAGES = {
-    "denied": "The phone did not allow this computer.",
-    "timeout": "Nobody tapped Allow on the phone in time.",
-    "busy": "The phone is being used by another computer.",
-    "stopped": "Streaming was stopped on the phone.",
-    "camera": "The phone’s camera stopped working.",
-    "replaced": "Another Beamcam on this computer took over the phone.",
-    "protocol": "The phone app and this app don’t fit together. Update both to the latest version.",
-    CONNECT_FAILED: "Couldn’t reach the phone. Is Beamcam open on it, and on the same Wi-Fi?",
-    CONNECTION_LOST: "Lost the connection to the phone.",
-    VIDEO_ERROR: "The video from the phone couldn’t be shown.",
-    FORGOTTEN: "Your phone doesn’t know this computer any more. Click Connect to pair again.",
-    UNKNOWN_PHONE: "This phone isn’t paired with this computer. Click Connect to pair it.",
+    "denied": N_("The phone did not allow this computer."),
+    "timeout": N_("Nobody tapped Allow on the phone in time."),
+    "busy": N_("The phone is being used by another computer."),
+    "stopped": N_("Streaming was stopped on the phone."),
+    "camera": N_("The phone’s camera stopped working."),
+    "replaced": N_("Another Beamcam on this computer took over the phone."),
+    "protocol": N_("The phone app and this app don’t fit together. Update both to the latest version."),
+    CONNECT_FAILED: N_("Couldn’t reach the phone. Is Beamcam open on it, and on the same Wi-Fi?"),
+    CONNECTION_LOST: N_("Lost the connection to the phone."),
+    VIDEO_ERROR: N_("The video from the phone couldn’t be shown."),
+    FORGOTTEN: N_("Your phone doesn’t know this computer any more. Click Connect to pair again."),
+    UNKNOWN_PHONE: N_("This phone isn’t paired with this computer. Click Connect to pair it."),
 }
 
 
 def end_message(reason: str) -> str:
-    return END_MESSAGES.get(reason, f"Streaming stopped ({reason}).")
+    message = END_MESSAGES.get(reason)
+    return _(message) if message else _("Streaming stopped ({reason}).").format(reason=reason)
 
 
 def parse_address(text: str) -> tuple[str, int]:
@@ -245,7 +247,7 @@ class Session:
         while True:
             self._flush(sock)
             if not sock.pending():
-                readable, _, _ = select.select([sock], [], [], 0.05)
+                readable = select.select([sock], [], [], 0.05)[0]
                 if not readable:
                     if timeout and time.monotonic() - last_data > timeout:
                         raise TimeoutError(f"nothing from the phone for {timeout:.0f} s")

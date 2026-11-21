@@ -9,9 +9,19 @@ from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
 
+from beamcam.i18n import N_
+
 LABEL = "Beamcam"
 SYSFS = Path("/sys/class/video4linux")
 INSTALLED_HELPER = Path("/usr/lib/beamcam/setup-virtual-camera")
+
+# What data/setup-virtual-camera prints on failure, so the window can show it translated.
+HELPER_MESSAGES = (
+    N_("The virtual camera is still in use. Close apps using it and try again."),
+    N_("v4l2loopback is not installed."),
+    N_("v4l2loopback is already used by another app."),
+    N_("The virtual camera did not appear."),
+)
 
 
 @dataclass(frozen=True)

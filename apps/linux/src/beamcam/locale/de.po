@@ -1,0 +1,258 @@
+# German translations for Beamcam.
+# Edit with any .po editor; tests/test_i18n.py checks that every text is translated.
+msgid ""
+msgstr ""
+"Project-Id-Version: Beamcam\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "The phone did not allow this computer."
+msgstr "Das Handy hat diesen Computer nicht zugelassen."
+
+msgid "Nobody tapped Allow on the phone in time."
+msgstr "Auf dem Handy wurde nicht rechtzeitig auf „Zulassen“ getippt."
+
+msgid "The phone is being used by another computer."
+msgstr "Das Handy wird gerade von einem anderen Computer verwendet."
+
+msgid "Streaming was stopped on the phone."
+msgstr "Die Übertragung wurde auf dem Handy beendet."
+
+msgid "The phone’s camera stopped working."
+msgstr "Die Kamera des Handys funktioniert nicht mehr."
+
+msgid "Another Beamcam on this computer took over the phone."
+msgstr "Ein anderes Beamcam auf diesem Computer hat das Handy übernommen."
+
+msgid "The phone app and this app don’t fit together. Update both to the latest version."
+msgstr "Die Handy-App und diese App passen nicht zusammen. Aktualisiere beide auf die neueste Version."
+
+msgid "Couldn’t reach the phone. Is Beamcam open on it, and on the same Wi-Fi?"
+msgstr "Das Handy ist nicht erreichbar. Ist Beamcam darauf geöffnet und im selben WLAN?"
+
+msgid "Lost the connection to the phone."
+msgstr "Die Verbindung zum Handy ist abgebrochen."
+
+msgid "The video from the phone couldn’t be shown."
+msgstr "Das Video vom Handy konnte nicht angezeigt werden."
+
+msgid "Your phone doesn’t know this computer any more. Click Connect to pair again."
+msgstr "Dein Handy kennt diesen Computer nicht mehr. Klicke auf „Verbinden“, um ihn erneut zu koppeln."
+
+msgid "This phone isn’t paired with this computer. Click Connect to pair it."
+msgstr "Dieses Handy ist nicht mit diesem Computer gekoppelt. Klicke auf „Verbinden“, um es zu koppeln."
+
+msgid "Streaming stopped ({reason})."
+msgstr "Die Übertragung wurde beendet ({reason})."
+
+msgid "Last connected on {date}"
+msgstr "Zuletzt verbunden: {date}"
+
+msgid "Connect by Address…"
+msgstr "Über Adresse verbinden…"
+
+msgid "Paired Phones"
+msgstr "Gekoppelte Handys"
+
+msgid "Remove Virtual Camera…"
+msgstr "Virtuelle Kamera entfernen…"
+
+msgid "Language…"
+msgstr "Sprache…"
+
+msgid "About Beamcam"
+msgstr "Info zu Beamcam"
+
+msgid "Check Again"
+msgstr "Erneut prüfen"
+
+msgid "Close"
+msgstr "Schließen"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Restart Beamcam"
+msgstr "Beamcam neu starten"
+
+msgid "Remove"
+msgstr "Entfernen"
+
+msgid "Connect"
+msgstr "Verbinden"
+
+msgid "Reconnecting to {name}…"
+msgstr "Verbindung zu {name} wird wiederhergestellt…"
+
+msgid "Connecting to {name}…"
+msgstr "Verbindung zu {name} wird hergestellt…"
+
+msgid "Tap “Allow” on Your Phone"
+msgstr "Tippe auf deinem Handy auf „Zulassen“"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Last connected today at {time}"
+msgstr "Zuletzt verbunden: heute um {time}"
+
+msgid "Switch Camera"
+msgstr "Kamera wechseln"
+
+msgid "Disconnect"
+msgstr "Trennen"
+
+msgid "Your user can’t write to the virtual camera."
+msgstr "Dein Benutzer darf nicht auf die virtuelle Kamera schreiben."
+
+msgid "Details"
+msgstr "Details"
+
+msgid "Beamcam needs the v4l2loopback driver to create a camera other apps can use."
+msgstr "Beamcam braucht den Treiber v4l2loopback, um eine Kamera zu erstellen, die andere Apps nutzen können."
+
+msgid "Install it by running this in a terminal, then restart your computer:"
+msgstr "Installiere ihn, indem du Folgendes in einem Terminal ausführst, und starte dann deinen Computer neu:"
+
+msgid "Install the “v4l2loopback” package with your distribution’s software tool, then restart your computer."
+msgstr "Installiere das Paket „v4l2loopback“ mit der Softwareverwaltung deiner Distribution und starte dann deinen Computer neu."
+
+msgid "Install the Virtual Camera Driver"
+msgstr "Treiber für die virtuelle Kamera installieren"
+
+msgid "Copy Command"
+msgstr "Befehl kopieren"
+
+msgid "Language"
+msgstr "Sprache"
+
+msgid "Beamcam restarts to switch the language. A running stream stops."
+msgstr "Beamcam startet neu, um die Sprache zu wechseln. Eine laufende Übertragung wird beendet."
+
+msgid "Remove the Virtual Camera?"
+msgstr "Virtuelle Kamera entfernen?"
+
+msgid "Other apps will no longer see the “Beamcam” camera, and it won’t come back after a restart. You can set it up again at any time."
+msgstr "Andere Apps sehen die Kamera „Beamcam“ dann nicht mehr, und sie kommt nach einem Neustart nicht zurück. Du kannst sie jederzeit wieder einrichten."
+
+msgid "Choose Your Phone"
+msgstr "Wähle dein Handy"
+
+msgid "Looking for Your Phone…"
+msgstr "Dein Handy wird gesucht…"
+
+msgid "Connect by Address"
+msgstr "Über Adresse verbinden"
+
+msgid "Type the address shown in the Beamcam app on your phone."
+msgstr "Gib die Adresse ein, die die Beamcam-App auf deinem Handy anzeigt."
+
+msgid "Preview only: set up the virtual camera to use your phone in other apps."
+msgstr "Nur Vorschau: Richte die virtuelle Kamera ein, um dein Handy in anderen Apps zu nutzen."
+
+msgid "The connection dropped. Trying again…"
+msgstr "Die Verbindung ist abgebrochen. Neuer Versuch…"
+
+msgid "Main Menu"
+msgstr "Hauptmenü"
+
+msgid "No Permission"
+msgstr "Keine Berechtigung"
+
+msgid "Command copied."
+msgstr "Befehl kopiert."
+
+msgid "These phones let this computer in without asking. If you forget one, click Connect and tap Allow on the phone to use it again."
+msgstr "Diese Handys lassen diesen Computer ohne Nachfrage zu. Wenn du eines vergisst, klicke auf „Verbinden“ und tippe auf dem Handy auf „Zulassen“, um es wieder zu nutzen."
+
+msgid "Close and open Beamcam to use the new language."
+msgstr "Schließe Beamcam und öffne es wieder, um die neue Sprache zu verwenden."
+
+msgid "Your phone and this computer need to be on the same Wi-Fi."
+msgstr "Dein Handy und dieser Computer müssen im selben WLAN sein."
+
+msgid "Streaming from {name}"
+msgstr "Übertragung von {name}"
+
+msgid "Missing video components: {names}. Install gst-plugins-good, gst-libav and gst-plugin-gtk4."
+msgstr "Fehlende Videokomponenten: {names}. Installiere gst-plugins-good, gst-libav und gst-plugin-gtk4."
+
+msgid "Set up the virtual camera so other apps can use your phone."
+msgstr "Richte die virtuelle Kamera ein, damit andere Apps dein Handy nutzen können."
+
+msgid "Set Up"
+msgstr "Einrichten"
+
+msgid "The virtual camera driver (v4l2loopback) isn’t installed."
+msgstr "Der Treiber für die virtuelle Kamera (v4l2loopback) ist nicht installiert."
+
+msgid "How to Install"
+msgstr "So installierst du ihn"
+
+msgid "Virtual camera removed."
+msgstr "Virtuelle Kamera entfernt."
+
+msgid "Virtual camera is ready."
+msgstr "Die virtuelle Kamera ist bereit."
+
+msgid "Couldn’t Change the Virtual Camera"
+msgstr "Virtuelle Kamera konnte nicht geändert werden"
+
+msgid "Forget"
+msgstr "Vergessen"
+
+msgid "Forget All"
+msgstr "Alle vergessen"
+
+msgid "Same as this computer ({language})"
+msgstr "Wie dieser Computer ({language})"
+
+msgid "Paired · {address}"
+msgstr "Gekoppelt · {address}"
+
+msgid "Open <b>Beamcam</b> on your Android phone."
+msgstr "Öffne <b>Beamcam</b> auf deinem Android-Handy."
+
+msgid "It shows the code <b>{code}</b>, the same as here."
+msgstr "Es zeigt den Code <b>{code}</b>, denselben wie hier."
+
+msgid "Choose “{camera}” as the camera in your video call, browser or any other app."
+msgstr "Wähle „{camera}“ als Kamera in deinem Videoanruf, Browser oder jeder anderen App."
+
+msgid "Use your Android phone as a webcam."
+msgstr "Nutze dein Android-Handy als Webcam."
+
+msgid "No Paired Phones"
+msgstr "Keine gekoppelten Handys"
+
+msgid "Phones you connect to show up here."
+msgstr "Handys, mit denen du dich verbindest, erscheinen hier."
+
+msgid "Paired phones forgotten."
+msgstr "Gekoppelte Handys vergessen."
+
+msgid "Your phone is asking whether “{name}” may use its camera."
+msgstr "Dein Handy fragt, ob „{name}“ seine Kamera verwenden darf."
+
+msgid "Beamcam can’t write to {path}. Add your user to the “video” group, then log out and back in:"
+msgstr "Beamcam darf nicht auf {path} schreiben. Füge deinen Benutzer zur Gruppe „video“ hinzu und melde dich ab und wieder an:"
+
+msgid "That doesn’t look like an address. It should look like {example}"
+msgstr "Das sieht nicht nach einer Adresse aus. Sie sollte so aussehen: {example}"
+
+msgid "“{name}” forgotten."
+msgstr "„{name}“ vergessen."
+
+msgid "The virtual camera is still in use. Close apps using it and try again."
+msgstr "Die virtuelle Kamera wird noch verwendet. Schließe die Apps, die sie nutzen, und versuche es erneut."
+
+msgid "v4l2loopback is not installed."
+msgstr "v4l2loopback ist nicht installiert."
+
+msgid "v4l2loopback is already used by another app."
+msgstr "v4l2loopback wird bereits von einer anderen App verwendet."
+
+msgid "The virtual camera did not appear."
+msgstr "Die virtuelle Kamera ist nicht erschienen."

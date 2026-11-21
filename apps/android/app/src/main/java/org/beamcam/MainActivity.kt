@@ -32,6 +32,10 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.semantics.Role
+import androidx.compose.material3.RadioButton
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Videocam
@@ -90,6 +94,8 @@ import java.net.Inet4Address
 import java.net.NetworkInterface
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: Context) = super.attachBaseContext(AppLanguage.wrap(newBase))
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -128,6 +134,7 @@ private fun App() {
     val forgotOneMessage = stringResource(R.string.forgot_computer)
     val unknownComputer = stringResource(R.string.unknown_computer)
     var allowedComputers by remember { mutableStateOf<List<AllowedComputer>?>(null) }
+    var choosingLanguage by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -158,6 +165,7 @@ private fun App() {
                     if (cameraGranted) {
                         OverflowMenu(
                             onAllowedComputers = { allowedComputers = settings.allowedComputers() },
+                            onLanguage = { choosingLanguage = true },
                             onTurnOff = { WebcamService.stop(context) },
                             canTurnOff = state.status != WebcamStatus.Stopped,
                         )
@@ -221,6 +229,17 @@ private fun App() {
         )
     }
 
+    if (choosingLanguage) {
+        LanguageDialog(
+            chosen = AppLanguage.chosen(context),
+            onChoose = { tag ->
+                choosingLanguage = false
+                (context as? android.app.Activity)?.let { AppLanguage.choose(it, tag, state.status != WebcamStatus.Stopped) }
+            },
+            onDismiss = { choosingLanguage = false },
+        )
+    }
+
     val pending = state.status as? WebcamStatus.AwaitingApproval
     if (pending != null) {
         AlertDialog(
@@ -275,6 +294,34 @@ private fun AllowedComputersDialog(
     )
 }
 
+@Composable
+private fun LanguageDialog(chosen: String?, onChoose: (String?) -> Unit, onDismiss: () -> Unit) {
+    val options = listOf<Pair<String?, String>>(null to stringResource(R.string.language_system, AppLanguage.phoneLanguageName(LocalContext.current))) +
+        AppLanguage.SUPPORTED.map { (tag, name) -> tag to name }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.menu_language)) },
+        text = {
+            Column(Modifier.selectableGroup()) {
+                for ((tag, name) in options) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .selectable(selected = tag == chosen, role = Role.RadioButton, onClick = { onChoose(tag) }),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = tag == chosen, onClick = null)
+                        Text(name, modifier = Modifier.padding(start = 16.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) } },
+    )
+}
+
 /** Dates and times in the phone's own format; relative phrases would mix its language into ours. */
 @Composable
 private fun lastConnected(computer: AllowedComputer, streamingTo: String?): String? {
@@ -289,13 +336,14 @@ private fun lastConnected(computer: AllowedComputer, streamingTo: String?): Stri
 }
 
 @Composable
-private fun OverflowMenu(onAllowedComputers: () -> Unit, onTurnOff: () -> Unit, canTurnOff: Boolean) {
+private fun OverflowMenu(onAllowedComputers: () -> Unit, onLanguage: () -> Unit, onTurnOff: () -> Unit, canTurnOff: Boolean) {
     var open by remember { mutableStateOf(false) }
     IconButton(onClick = { open = true }) {
         Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.menu_more))
     }
     DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
         DropdownMenuItem(text = { Text(stringResource(R.string.menu_allowed_computers)) }, onClick = { open = false; onAllowedComputers() })
+        DropdownMenuItem(text = { Text(stringResource(R.string.menu_language)) }, onClick = { open = false; onLanguage() })
         if (canTurnOff) {
             DropdownMenuItem(text = { Text(stringResource(R.string.action_turn_off)) }, onClick = { open = false; onTurnOff() })
         }

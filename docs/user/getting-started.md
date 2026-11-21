@@ -39,6 +39,11 @@ that with a phone you paired this way; other phones just appear in the list.
 - You can lock the phone; streaming continues. Plug it in for long calls.
 - **Disconnect** on the computer, or **Stop streaming** on the phone or in its notification, ends it.
 
+## Language
+
+Beamcam uses the language of your phone and of your computer. To use another one, open **⋮ →
+Language** on the phone or **☰ → Language** on the computer.
+
 ## Undo everything
 
 - On the phone: **⋮ → Allowed computers** shows every computer you allowed. **Remove** one, or
