@@ -64,7 +64,7 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
 - `apps/windows/` (see its README for the picture):
   - `src/Beamcam.Core` (C#, any OS) ports the Linux core one to one: `Protocol.cs`, `Secure.cs`,
     `Session.cs`, `Reassembler.cs`, `Mdns.cs`, `Reconnector.cs`, `Config.cs`, `Controller.cs`.
-    Change both computer apps together.
+    Change both computer apps together. `Text.cs` and `Strings*.resx`: translations for the window.
   - `src/Beamcam.Platform`: P/Invoke to the native DLL: `VirtualCamera.cs`, `NativeVideoOutput.cs` (decode thread).
   - `src/Beamcam` (WPF window) and `src/Beamcam.Cli` (`beamcam-cli.exe`) are thin layers over the controller.
   - `native/` (C++): `BeamcamCamera.dll`. `media_source.cpp` is the source Windows' Frame Server loads;
@@ -117,8 +117,8 @@ Before calling work done, say which of these applied:
 - Never roll your own crypto. TLS comes from the platform (Conscrypt, Python `ssl`, .NET `SslStream`),
   AES-GCM from JCA, python-cryptography and .NET `AesGcm`; pairing rules live in `docs/internals/protocol.md`.
 - Default to no comment. Write one only for a constraint, an external quirk or an invariant the code can't show.
-- User-facing text is translated: `strings.xml` on the phone, `_()` on the computer, and every
-  language updated in the same change (see [translations](docs/operations/development.md#translations)).
+- User-facing text is translated: `strings.xml` on the phone, `_()` on Linux, `Strings.resx` on
+  Windows, and every language updated in the same change (see [translations](docs/operations/development.md#translations)).
 - User-facing text is short, friendly and tells people what to do. Use “Allow”, not “Authorize”;
   “Wi-Fi”, not “LAN”. Don't name other products (say “your video call”, not a brand); code
   comments and internal docs may, where they record a real compatibility fact.

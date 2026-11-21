@@ -50,19 +50,24 @@ Older releases such as Ubuntu 24.04 lack `gstreamer1.0-gtk4`, which the preview 
 
 ## Translations
 
-Both apps follow the device's language and offer **Language** in their menu to pick another.
+All apps follow the device's language and offer **Language** in their menu to pick another.
 English is the source; German is the only translation so far.
 
 - **Phone:** `res/values/strings.xml`, with one `values-<lang>/strings.xml` per language. A new
   language also goes in `res/xml/locales_config.xml` and `AppLanguage.SUPPORTED`. Android 13+
   keeps the choice itself (it also appears in the phone's Settings → Apps → Beamcam → Language);
   older versions store it in the app's settings and apply it in `AppLanguage.wrap`.
-- **Computer:** texts are wrapped in `_()` (or `N_()` where they are defined and shown elsewhere).
+- **Linux:** texts are wrapped in `_()` (or `N_()` where they are defined and shown elsewhere).
   Translations are gettext `.po` files in `apps/linux/src/beamcam/locale/`, edited with any .po
   editor and read at startup, so no compile step is needed. A new language also goes in
   `i18n.LANGUAGES`. `tests/test_i18n.py` fails when a text is untranslated, no longer used, or its
   `{placeholders}` differ. Picking a language restarts the window. The command line stays
   English, because scripts read it.
+- **Windows:** texts are keys in `apps/windows/src/Beamcam.Core/Strings.resx`, with one
+  `Strings.<lang>.resx` per language, read through `Text.Get` and `{app:Tr Key}` in XAML. Keep the
+  wording of Linux's `.po` where the texts match. A new language also goes in `Text.Languages` and the
+  installer's `[Languages]`. `TextTests` fails when a text is untranslated, a key is missing or
+  unused, or its placeholders differ. Picking a language restarts the window; `beamcam-cli` stays English.
 
 ## Emulator
 
@@ -135,7 +140,11 @@ Real phones need a Windows that sits on the same network, so mDNS and UDP from t
 [dockurr/windows](https://github.com/dockur/windows) runs Windows 11 in Docker with KVM and downloads
 it from Microsoft. With `DHCP=Y` and a macvlan network on a **wired** interface the VM gets its own
 address from the router. The host itself cannot talk to a macvlan guest; a second container on the
-same macvlan network can (`beamcam-jump` below).
+same macvlan network can (a small container with `openssh-client`, below).
+
+`DHCP=Y` needs the host's `macvtap` and `tun` kernel modules. They can't load when the kernel was
+updated and the computer not restarted yet, so restart first. Give the VM's container a fixed
+`--mac-address` so the router keeps giving it the same address.
 
 ```sh
 docker network create -d macvlan --subnet=192.168.2.0/24 --gateway=192.168.2.1 \
@@ -163,8 +172,9 @@ same session. Screenshots come from the same trick or from QEMU's monitor.
 2. `beamcam-cli discover` lists the phone; `beamcam-cli stream <phone> --frames 300 --snapshot f.png`
    pairs on first use (tap **Allow**), `--tcp-only` forces the TCP fallback.
 3. While the app or `beamcam-cli stream` runs, `beamcam-capture --frames 90 --out cam.bmp` reads the
-   “Beamcam” camera through Media Foundation like a browser does, and
-   `ffmpeg -f dshow -i video="Beamcam" -frames:v 1 cam.png` reads it like a DirectShow app.
+   camera through Media Foundation like a browser does, and
+   `ffmpeg -f dshow -i video="Beamcam (Windows Virtual Camera)" -frames:v 1 cam.png` reads it like a
+   DirectShow app. Windows adds that suffix to the name of every virtual camera.
 4. Compare orientation with the Linux CLI's `--snapshot` for the same phone position: both apps apply
    the same rotation.
 

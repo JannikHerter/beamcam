@@ -13,7 +13,10 @@
    - If it says the driver isn't installed, click **How to Install** and run the command it shows,
      then restart your computer.
 3. On Windows, the installer sets up the camera; click **Yes** when Windows asks whether Beamcam
-   may make changes. The camera is there while the Beamcam app is open.
+   may make changes. The camera is there while the Beamcam app is open, and video apps list it as
+   **Beamcam (Windows Virtual Camera)**.
+   - If Windows says it protected your PC, click **More info**, then **Run anyway**. It says this
+     because the installer isn't signed yet.
 
 ## On the phone
 
