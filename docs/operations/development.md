@@ -8,6 +8,8 @@
   gst-plugins-base, -good (`v4l2sink`, `videoflip`), gst-libav (`avdec_h264`) and gst-plugin-gtk4
   (`gtk4paintablesink`). On Arch: `pacman -S python-gobject python-cryptography gtk4 libadwaita gst-plugins-good gst-libav gst-plugin-gtk4`.
 - **Virtual camera:** `v4l2loopback-dkms` (see `install_command()` in `apps/linux/src/beamcam/virtualcam.py`).
+- **Windows app:** builds on Linux with Docker only (see [Windows](#windows)); on Windows, the .NET 10
+  SDK, Visual Studio 2022 with the C++ desktop workload (or its Build Tools) and Inno Setup 6.
 
 ## Build and run
 
@@ -91,3 +93,64 @@ sudo sh apps/linux/src/beamcam/data/setup-virtual-camera            # create + p
 sudo sh apps/linux/src/beamcam/data/setup-virtual-camera --remove   # undo
 v4l2-ctl --list-devices
 ```
+
+## Windows
+
+The Windows 11 app lives in `apps/windows` (layout in its [README](../../apps/windows/README.md)).
+
+### Build and unit tests
+
+```sh
+cd apps/windows
+cross/build.sh     # Linux, in containers: out/app (the app) and out/tools (test programs)
+docker run --rm -u $(id -u):$(id -g) -e HOME=/tmp -v "$PWD":/src -w /src mcr.microsoft.com/dotnet/sdk:10.0 \
+  dotnet test tests/Beamcam.Core.Tests
+```
+
+`cross/build.sh` compiles `BeamcamCamera.dll` with clang-cl against Microsoft's CRT and SDK (fetched
+by [xwin](https://github.com/Jake-Shadle/xwin), which accepts Microsoft's license for them) and
+publishes the C# projects self-contained for `win-x64`. The installer is made in Windows:
+`iscc installer\Beamcam.iss` with `out\app` next to it, giving `out\Beamcam-Setup-0.1.0.exe`.
+On a Windows machine, the commands in the app's README build everything natively.
+
+### A Windows 11 VM for end-to-end tests
+
+Real phones need a Windows that sits on the same network, so mDNS and UDP from the phone reach it.
+[dockurr/windows](https://github.com/dockur/windows) runs Windows 11 in Docker with KVM and downloads
+it from Microsoft. With `DHCP=Y` and a macvlan network on a **wired** interface the VM gets its own
+address from the router. The host itself cannot talk to a macvlan guest; a second container on the
+same macvlan network can (`beamcam-jump` below).
+
+```sh
+docker network create -d macvlan --subnet=192.168.2.0/24 --gateway=192.168.2.1 \
+  --ip-range=192.168.2.240/29 -o parent=<wired interface> beamcam-lan
+docker run -d --name beamcam-win11 --network beamcam-lan --ip 192.168.2.241 \
+  -e VERSION=11 -e RAM_SIZE=8G -e CPU_CORES=6 -e DISK_SIZE=64G -e DHCP=Y \
+  -e USERNAME=tester -e PASSWORD=<password> \
+  --device /dev/kvm --device /dev/net/tun --device /dev/vhost-net --device-cgroup-rule='c *:* rwm' \
+  --cap-add NET_ADMIN -v beamcam-win11:/storage -v <oem folder>:/oem --stop-timeout 120 dockurr/windows
+```
+
+The OEM folder's `install.bat` runs once after setup; ours installs Win32-OpenSSH from its MSI, puts a
+public key in `C:\ProgramData\ssh\administrators_authorized_keys` and turns off sleep. Then, from a
+small container with `openssh-client` on `beamcam-lan`: `ssh tester@<vm address>` (find it with
+`nmap -sn` or the router).
+
+Programs started over SSH run in session 0 and cannot show windows. To run the app on the desktop,
+start it with a scheduled task for the signed-in user (`schtasks /create /tn beamcam /tr ... /sc once
+/st 00:00 /ru tester /it`, then `schtasks /run /tn beamcam`), and drive it with UI Automation from the
+same session. Screenshots come from the same trick or from QEMU's monitor.
+
+### End to end in Windows
+
+1. Install `out\Beamcam-Setup-0.1.0.exe` (silent: `/VERYSILENT /SUPPRESSMSGBOXES`).
+2. `beamcam-cli discover` lists the phone; `beamcam-cli stream <phone> --frames 300 --snapshot f.png`
+   pairs on first use (tap **Allow**), `--tcp-only` forces the TCP fallback.
+3. While the app or `beamcam-cli stream` runs, `beamcam-capture --frames 90 --out cam.bmp` reads the
+   “Beamcam” camera through Media Foundation like a browser does, and
+   `ffmpeg -f dshow -i video="Beamcam" -frames:v 1 cam.png` reads it like a DirectShow app.
+4. Compare orientation with the Linux CLI's `--snapshot` for the same phone position: both apps apply
+   the same rotation.
+
+Remove the VM with `docker rm -f beamcam-win11 && docker volume rm beamcam-win11 && docker network rm
+beamcam-lan` (and `docker rmi dockurr/windows`).

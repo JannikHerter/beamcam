@@ -9,6 +9,7 @@
   (for example `192.168.1.23`).
 - A firewall can block discovery. Allow mDNS (UDP port 5353). On Fedora:
   `sudo firewall-cmd --add-service=mdns --permanent && sudo firewall-cmd --reload`.
+  On Windows the installer allows it for Beamcam; another security program may still block it.
 
 ## “Couldn't reach the phone”
 
@@ -19,6 +20,9 @@ are on the same Wi-Fi. VPNs on the computer can also get in the way; try turning
 
 - Start streaming first, then (re)open the camera list in the app. Many apps only list the
   camera while the phone is streaming.
+- **Windows:** the camera exists while the Beamcam app is open. Open Beamcam first, then the other
+  app. If it still isn't there, check **Settings → Privacy & security → Camera**: camera access and
+  “Let desktop apps access your camera” must be on.
 - **Firefox:** if the camera is missing (seen on some Fedora builds), open `about:config` and set
   `media.webrtc.camera.allow-pipewire` to `false`, then restart Firefox.
 - After installing the driver, restart your computer once.

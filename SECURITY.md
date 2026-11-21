@@ -22,8 +22,12 @@
 - A computer that asks to pair cannot block allowed ones: while its prompt is open, an allowed
   computer that connects takes over and the prompt closes.
 - The phone shows a notification for as long as it streams, and Android shows its camera indicator.
-- The computer keeps its pairing secrets in `~/.config/beamcam/config.json`, readable only by
-  its user. Anyone who can read that file can connect to the paired phones.
+- The computer keeps its pairing secrets in `~/.config/beamcam/config.json` (Linux) or
+  `%LOCALAPPDATA%\Beamcam\config.json` (Windows), readable only by its user. Anyone who can read
+  that file can connect to the paired phones.
+- On Windows, decoded frames go from the app to the camera source in Windows' camera service over the
+  named pipe `\\.\pipe\Beamcam.VirtualCamera`. Only LOCAL SERVICE (the camera service), SYSTEM and the
+  user running Beamcam may open it, and it refuses remote clients.
 
 ## Known limitations
 
@@ -34,6 +38,10 @@
   bandwidth.
 - The virtual camera helper runs as root via `pkexec` (it loads v4l2loopback and writes
   `/etc/modprobe.d/beamcam.conf` and `/etc/modules-load.d/beamcam.conf`).
+- The Windows installer runs as administrator: it registers the camera source for the whole computer
+  (Windows' camera service only loads sources from HKLM) and adds a firewall rule that lets
+  Beamcam receive UDP from the local subnet (phones answering the search). The installer and the app
+  are not code-signed yet, so Windows warns before running the installer.
 
 ## Reporting
 

@@ -1,7 +1,8 @@
 # Wire protocol (version 2)
 
-The contract between `apps/android` (`Protocol.kt`, `Secure.kt`) and `apps/linux` (`protocol.py`,
-`secure.py`). Change both, their tests and this page together. Receivers **ignore unknown message
+The contract between `apps/android` (`Protocol.kt`, `Secure.kt`), `apps/linux` (`protocol.py`,
+`secure.py`) and `apps/windows` (`Protocol.cs`, `Secure.cs`). Change all of them, their tests and this
+page together. Receivers **ignore unknown message
 types**, so new optional messages do not need a version bump; anything an old peer would
 misunderstand does. Version 2 added TLS and pairing; a version 1 peer cannot talk to it at all.
 

@@ -3,15 +3,17 @@
 ## What you need
 
 - An Android phone (Android 9 or newer).
-- A Linux computer on the **same Wi-Fi** as the phone. A hotspot from the phone works too.
+- A Linux or Windows 11 computer on the **same Wi-Fi** as the phone. A hotspot from the phone works too.
 
 ## On the computer
 
 1. Install and open **Beamcam**.
-2. The first time, a bar at the top says **Set up the virtual camera**. Click **Set Up** and enter
-   your password. This creates the camera other apps will see. You only do this once.
+2. On Linux, the first time, a bar at the top says **Set up the virtual camera**. Click **Set Up**
+   and enter your password. This creates the camera other apps will see. You only do this once.
    - If it says the driver isn't installed, click **How to Install** and run the command it shows,
      then restart your computer.
+3. On Windows, the installer sets up the camera; click **Yes** when Windows asks whether Beamcam
+   may make changes. The camera is there while the Beamcam app is open.
 
 ## On the phone
 
@@ -41,5 +43,6 @@ that with a phone you paired this way; other phones just appear in the list.
 
 - On the phone: **⋮ → Allowed computers** shows every computer you allowed. **Remove** one, or
   **Remove all**, and they have to ask again. **⋮ → Turn off** stops the phone from being found.
-- On the computer: **☰ → Paired Phones** lets you **Forget** one phone or all of them, and
-  **☰ → Remove Virtual Camera** removes the camera.
+- On the computer: **☰ → Paired Phones** lets you **Forget** one phone or all of them. On Linux,
+  **☰ → Remove Virtual Camera** removes the camera. On Windows the camera goes away when you close
+  Beamcam; uninstall Beamcam in **Settings → Apps** to remove everything.
