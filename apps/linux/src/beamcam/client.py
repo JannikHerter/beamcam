@@ -28,6 +28,7 @@ PUNCH_PHASE = 2.0
 FEEDBACK_INTERVAL = 1.0
 KEYFRAME_RETRY = 0.25
 TRANSPORTS = ("udp", "tcp")
+MAX_VIDEO_SIDE = 8192
 
 
 @dataclass(frozen=True)
@@ -152,6 +153,7 @@ class Session:
         self.fingerprint: str | None = None
         self._pairings = pairings
         self._allow_pairing = allow_pairing
+        self._asked_user = False
         self._udp: socket.socket | None = None
         self._udp_started = False
         self._last_video = time.monotonic()
@@ -215,7 +217,11 @@ class Session:
             sock = _tls_context().wrap_socket(raw)
         except (ssl.SSLError, OSError) as error:
             log.info("TLS with %s failed: %s", self.host, error)
-            return CLOSED if self._closed.is_set() else "protocol"
+            if self._closed.is_set():
+                return CLOSED
+            # A connection that drops mid-handshake is the network, not an incompatible phone.
+            dropped = not isinstance(error, ssl.SSLError) or isinstance(error, (ssl.SSLEOFError, ssl.SSLSyscallError))
+            return CONNECT_FAILED if dropped else "protocol"
         self._sock = sock
         fingerprint = secure.fingerprint(sock.getpeercert(binary_form=True))
         self.fingerprint = fingerprint
@@ -257,7 +263,11 @@ class Session:
                 raise EOFError("connection closed")
             last_data = time.monotonic()
             for message in reader.feed(data):
-                end = self._handle(message, sock, fingerprint, secret)
+                try:
+                    end = self._handle(message, sock, fingerprint, secret)
+                except (ValueError, TypeError, OverflowError) as error:
+                    # Whatever the phone sent must end the session cleanly, never kill this thread.
+                    raise protocol.ProtocolError(f"bad message {message.type:#x}: {error}") from error
                 if end is not None:
                     return end
                 if message.type == protocol.ACCEPT:
@@ -266,6 +276,7 @@ class Session:
 
     def _handle(self, message: protocol.Message, sock: socket.socket, fingerprint: str, secret: bytes | None) -> str | None:
         if message.type == protocol.PENDING:
+            self._asked_user = True
             self._listener.on_pending(secure.pairing_code(fingerprint))
         elif message.type == protocol.ACCEPT:
             body = message.json()
@@ -279,10 +290,15 @@ class Session:
                 fps=int(body.get("fps", 30)),
                 facing=str(body.get("facing", "front")),
             )
+            if not (0 < info.width <= MAX_VIDEO_SIDE and 0 < info.height <= MAX_VIDEO_SIDE):
+                raise protocol.ProtocolError(f"bad video size {info.width}x{info.height}")
             new_secret = body.get("secret")
             if secret is None:
                 if not isinstance(new_secret, str) or len(new_secret) != 64:
                     raise protocol.ProtocolError("phone accepted without pairing")
+                # A real phone always asks its user first; only an impostor skips the prompt and the code.
+                if not self._asked_user:
+                    raise protocol.ProtocolError("phone paired without asking")
                 self._pairings.pair(fingerprint, bytes.fromhex(new_secret), info.device_id, info.device_name)
             else:
                 self._pairings.connected(fingerprint, info.device_name)
@@ -293,9 +309,12 @@ class Session:
             except ValueError:
                 key = b""
             if self._udp is not None and "udpPort" in body and len(key) == 32:
+                udp_port = int(body["udpPort"])
+                if not 0 < udp_port < 65536:
+                    raise protocol.ProtocolError(f"bad UDP port {udp_port}")
                 self._udp_started = True
                 threading.Thread(
-                    target=self._udp_loop, args=(sock.getpeername()[0], int(body["udpPort"]), key), name="udp", daemon=True
+                    target=self._udp_loop, args=(sock.getpeername()[0], udp_port, key), name="udp", daemon=True
                 ).start()
         elif message.type == protocol.VIDEO:
             self._last_video = time.monotonic()

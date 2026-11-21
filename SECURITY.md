@@ -35,8 +35,8 @@
   codes are compared.
 - mDNS is not authenticated, so a stranger on the network can list a look-alike phone, even with a
   paired phone's id and the “Paired” label. It never gets a secret, and automatic connects refuse it.
-  The Windows app also warns that the phone changed, refuses a pairing that skipped the phone's
-  prompt and keeps the real phone's pairing. The Linux app doesn't do these three yet.
+  The computer also warns that the phone changed, refuses a pairing that skipped the phone's prompt
+  and keeps the real phone's pairing.
 - Replays: the phone ignores replayed UDP control messages, but the computer accepts reordered
   (and therefore replayed) video datagrams; their frames are discarded as old, so this only costs
   bandwidth.

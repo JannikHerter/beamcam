@@ -44,6 +44,12 @@ msgstr "Dein Handy kennt diesen Computer nicht mehr. Klicke auf „Verbinden“,
 msgid "This phone isn’t paired with this computer. Click Connect to pair it."
 msgstr "Dieses Handy ist nicht mit diesem Computer gekoppelt. Klicke auf „Verbinden“, um es zu koppeln."
 
+msgid "This Phone Has Changed"
+msgstr "Dieses Handy hat sich verändert"
+
+msgid "If you reinstalled Beamcam on it, click Connect and tap Allow on the phone. If you didn’t, don’t connect: someone else may be pretending to be your phone."
+msgstr "Wenn du Beamcam darauf neu installiert hast, klicke auf „Verbinden“ und tippe auf dem Handy auf „Zulassen“. Wenn nicht, verbinde dich nicht: Jemand könnte sich als dein Handy ausgeben."
+
 msgid "Streaming stopped ({reason})."
 msgstr "Die Übertragung wurde beendet ({reason})."
 

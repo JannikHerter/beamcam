@@ -204,6 +204,14 @@ class PairingTest(unittest.TestCase):
         self.assertEqual(recorder.events[-1], ("end", "protocol"))
         self.assertEqual(pairings.secrets, {})
 
+    def test_pairing_without_the_phone_asking_is_refused(self):
+        """Skipping PENDING would also skip the code on the computer's screen."""
+        port, _ = fake_phone([accept(secret=SECRET.hex())])
+        pairings = MemoryPairings()
+        _, recorder = run_session(port, pairings, allow_pairing=True)
+        self.assertEqual(recorder.events, [("end", "protocol")])
+        self.assertEqual(pairings.secrets, {})
+
 
 class SessionTest(unittest.TestCase):
     def test_set_camera_from_another_thread(self):
@@ -228,6 +236,66 @@ class SessionTest(unittest.TestCase):
         probe.close()
         _, recorder = run_session(port, MemoryPairings())
         self.assertEqual(recorder.events, [("end", CONNECT_FAILED)])
+
+    def test_malformed_messages_end_the_session_cleanly(self):
+        cases = {
+            "null width": accept(width=None),
+            "text width": accept(width="wide"),
+            "infinite width": protocol.encode(protocol.ACCEPT, b'{"codec":"h264","width":1e999}'),
+            "huge video": accept(width=100000),
+            "zero height": accept(height=0),
+            "bad UDP port": accept(udpPort=70000, udpKey="00" * 32),
+            "text UDP port": accept(udpPort="x", udpKey="00" * 32),
+            "null rotation": protocol.encode_json(protocol.CAMERA, {"rotation": None}),
+            "not an object": protocol.encode(protocol.END, b"[]"),
+            "not JSON": protocol.encode(protocol.CAMERA, b"{"),
+            "short video": protocol.encode(protocol.VIDEO, b"\x00"),
+        }
+        for name, message in cases.items():
+            with self.subTest(name):
+                port, _ = fake_phone([message], hold_open=True)
+                session, recorder = run_session(port, MemoryPairings({PHONE_FP: SECRET}))
+                session.join(5)
+                self.assertEqual(recorder.events[-1], ("end", "protocol"))
+
+    def test_bad_secret_pairs_nothing(self):
+        port, _ = fake_phone([protocol.encode_json(protocol.PENDING, {}), accept(secret="zz" * 32)])
+        pairings = MemoryPairings()
+        _, recorder = run_session(port, pairings, allow_pairing=True)
+        self.assertEqual(recorder.events[-1], ("end", "protocol"))
+        self.assertEqual(pairings.secrets, {})
+
+    def test_connection_dropped_during_tls_is_not_a_version_problem(self):
+        server = socket.socket()
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        self.addCleanup(server.close)
+
+        def hang_up():
+            raw, _ = server.accept()
+            raw.recv(1)
+            raw.close()
+
+        threading.Thread(target=hang_up, daemon=True).start()
+        _, recorder = run_session(server.getsockname()[1], MemoryPairings())
+        self.assertEqual(recorder.events, [("end", CONNECT_FAILED)])
+
+    def test_tls_that_cannot_agree_is_a_version_problem(self):
+        server = socket.socket()
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        self.addCleanup(server.close)
+
+        def not_tls():
+            raw, _ = server.accept()
+            raw.recv(1024)
+            raw.sendall(b"HTTP/1.1 400 Bad Request\r\n\r\n")
+            time.sleep(0.2)
+            raw.close()
+
+        threading.Thread(target=not_tls, daemon=True).start()
+        _, recorder = run_session(server.getsockname()[1], MemoryPairings())
+        self.assertEqual(recorder.events, [("end", "protocol")])
 
     def test_phone_closing_mid_stream_is_connection_lost(self):
         port, _ = fake_phone([accept()[:-2]])

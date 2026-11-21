@@ -48,11 +48,15 @@ class PairingsTest(unittest.TestCase):
         self.assertEqual([p.phone_id for p in config.paired_phones()], ["phone-2"])
         self.assertIsNone(config.last_phone_id)
 
-    def test_reinstalled_phone_replaces_its_old_pairing(self):
+    def test_a_stranger_claiming_a_phones_id_cannot_erase_its_pairing(self):
         config = Config()
-        config.pair("old-key", b"\x01" * 32, "phone-1", "Pixel")
-        config.pair("new-key", b"\x02" * 32, "phone-1", "Pixel")
-        self.assertEqual([p.fingerprint for p in config.paired_phones()], ["new-key"])
+        config.pair("real-key", b"\x01" * 32, "phone-1", "Pixel")
+        config.last_phone_id = "phone-1"
+        config.pair("other-key", b"\x02" * 32, "phone-1", "Pixel")
+        self.assertEqual(config.secret_for("real-key"), b"\x01" * 32)
+        config.forget("other-key")
+        self.assertEqual(config.last_phone_id, "phone-1")
+        self.assertEqual(Config.load().secret_for("real-key"), b"\x01" * 32)
 
     def test_pairings_from_before_last_connected_was_stored(self):
         config = Config(pairings={"fp1": {"secret": "01" * 32, "phone_id": "phone-1", "name": "Pixel"}})

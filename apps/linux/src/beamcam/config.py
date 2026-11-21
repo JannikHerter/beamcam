@@ -84,9 +84,8 @@ class Config:
 
     def pair(self, fingerprint: str, secret: bytes, phone_id: str, name: str) -> None:
         with _lock:
-            # A phone that got a new key (app reinstalled) replaces its old pairing.
-            for old in [fp for fp, e in self.pairings.items() if phone_id and e.get("phone_id") == phone_id]:
-                del self.pairings[old]
+            # Never drops another pairing with the same phone id: ids come from the network, so a
+            # stranger could otherwise erase the real phone's pin by claiming its id.
             self.pairings[fingerprint] = {
                 "secret": secret.hex(), "phone_id": phone_id, "name": name, "last_connected": int(time.time())
             }
@@ -114,7 +113,9 @@ class Config:
     def forget(self, fingerprint: str) -> None:
         with _lock:
             entry = self.pairings.pop(fingerprint, None)
-            if entry and entry.get("phone_id") == self.last_phone_id:
+            phone_id = entry.get("phone_id") if entry else None
+            still_paired = any(e.get("phone_id") == phone_id for e in self.pairings.values())
+            if entry and phone_id == self.last_phone_id and not still_paired:
                 self.last_phone_id = None
         self.save()
 

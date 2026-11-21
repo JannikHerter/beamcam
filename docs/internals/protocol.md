@@ -34,8 +34,9 @@ misunderstand does. Version 2 added TLS and pairing; a version 1 peer cannot tal
   learns a secret.
 - The computer pairs with a new fingerprint only when the user asked to connect. Automatic connects
   and reconnects go only to a fingerprint it already knows.
-- A phone always sends PENDING before an ACCEPT that carries a new secret. The Windows app refuses a
+- A phone always sends PENDING before an ACCEPT that carries a new secret. The computer refuses a
   pairing without it, because skipping it would also skip the code on the computer's screen.
+- A new pairing never removes another one, even with the same phone id: ids come from the network.
 
 ## Framing
 

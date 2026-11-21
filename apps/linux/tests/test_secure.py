@@ -51,11 +51,11 @@ class PairingStoreTest(unittest.TestCase):
         self.assertEqual(again.secret_for("fp1"), KEY)
         self.assertTrue(again.is_paired("phone-1"))
 
-    def test_new_key_for_same_phone_replaces_old_pairing(self):
+    def test_new_key_for_same_phone_id_keeps_the_old_pairing(self):
         config = Config.load()
         config.pair("old-fp", KEY, "phone-1", "Pixel")
         config.pair("new-fp", bytes(32), "phone-1", "Pixel")
-        self.assertIsNone(config.secret_for("old-fp"))
+        self.assertEqual(config.secret_for("old-fp"), KEY)
         self.assertEqual(config.secret_for("new-fp"), bytes(32))
 
     def test_forget(self):

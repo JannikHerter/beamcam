@@ -15,7 +15,7 @@ gi.require_version("Gst", "1.0")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
 from beamcam import APP_ID, __version__, i18n, virtualcam  # noqa: E402
-from beamcam.client import CLOSED, StreamInfo, end_message, parse_address  # noqa: E402
+from beamcam.client import CLOSED, UNKNOWN_PHONE, StreamInfo, end_message, parse_address  # noqa: E402
 from beamcam.config import Config, PairedPhone, computer_name  # noqa: E402
 from beamcam.controller import Controller  # noqa: E402
 from beamcam.i18n import _  # noqa: E402
@@ -497,6 +497,9 @@ class Window(Adw.ApplicationWindow):
         self.stack.set_visible_child_name("streaming")
 
     def on_ended(self, reason: str) -> None:
+        target = self.reconnector.target
+        known_id = target.phone_id if target else None
+        changed_phone = reason == UNKNOWN_PHONE and bool(known_id) and self.config.is_paired(known_id)
         self.controller = None
         self.picture.set_paintable(None)
         retry = self.reconnector.ended(reason)
@@ -509,7 +512,15 @@ class Window(Adw.ApplicationWindow):
             self.reconnect_source = GLib.timeout_add(int(delay * 1000), self._reconnect)
             return
         self._show_phones()
-        if reason != CLOSED:
+        if changed_phone:
+            self._alert(
+                _("This Phone Has Changed"),
+                _(
+                    "If you reinstalled Beamcam on it, click Connect and tap Allow on the phone. "
+                    "If you didn’t, don’t connect: someone else may be pretending to be your phone."
+                ),
+            )
+        elif reason != CLOSED:
             self.toast(end_message(reason))
 
     def _reconnect(self) -> bool:
