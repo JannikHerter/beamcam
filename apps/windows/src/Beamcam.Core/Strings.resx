@@ -7,14 +7,14 @@
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="EndDenied" xml:space="preserve"><value>The phone did not allow this computer.</value></data>
   <data name="EndTimeout" xml:space="preserve"><value>Nobody tapped Allow on the phone in time.</value></data>
-  <data name="EndBusy" xml:space="preserve"><value>The phone is being used by another computer.</value></data>
+  <data name="EndBusy" xml:space="preserve"><value>The phone is being used by another computer. Disconnect it there, then try again.</value></data>
   <data name="EndStopped" xml:space="preserve"><value>Streaming was stopped on the phone.</value></data>
-  <data name="EndCamera" xml:space="preserve"><value>The phone’s camera stopped working.</value></data>
+  <data name="EndCamera" xml:space="preserve"><value>The phone’s camera stopped working. Close other camera apps on your phone, then click Connect.</value></data>
   <data name="EndReplaced" xml:space="preserve"><value>Another Beamcam on this computer took over the phone.</value></data>
   <data name="EndProtocol" xml:space="preserve"><value>The phone app and this app don’t fit together. Update both to the latest version.</value></data>
   <data name="EndConnectFailed" xml:space="preserve"><value>Couldn’t reach the phone. Is Beamcam open on it, and on the same Wi-Fi?</value></data>
-  <data name="EndConnectionLost" xml:space="preserve"><value>Lost the connection to the phone.</value></data>
-  <data name="EndVideoError" xml:space="preserve"><value>The video from the phone couldn’t be shown.</value></data>
+  <data name="EndConnectionLost" xml:space="preserve"><value>Lost the connection to the phone. Make sure it’s on the same Wi-Fi, then click Connect.</value></data>
+  <data name="EndVideoError" xml:space="preserve"><value>The video from the phone couldn’t be shown. Close Beamcam, open it again and click Connect.</value></data>
   <data name="EndForgotten" xml:space="preserve"><value>Your phone doesn’t know this computer any more. Click Connect to pair again.</value></data>
   <data name="EndUnknownPhone" xml:space="preserve"><value>This phone isn’t paired with this computer. Click Connect to pair it.</value></data>
   <data name="EndOther" xml:space="preserve"><value>Streaming stopped ({0}).</value></data>
@@ -24,8 +24,8 @@
   <data name="CameraNeedsWindows11" xml:space="preserve"><value>Other apps can use Beamcam on Windows 11 only.</value></data>
   <data name="CameraAccessDenied" xml:space="preserve"><value>Windows didn’t let Beamcam add its camera. Make sure camera access is on in Settings → Privacy &amp; security → Camera.</value></data>
   <data name="CameraFailed" xml:space="preserve"><value>The Beamcam camera couldn’t start (error {0}). Restart your computer and try again.</value></data>
-  <data name="DecoderMissing" xml:space="preserve"><value>Windows’ video decoder isn’t available (error {0}).</value></data>
-  <data name="DecoderFailed" xml:space="preserve"><value>Windows’ video decoder failed (error {0}).</value></data>
+  <data name="DecoderMissing" xml:space="preserve"><value>This computer can’t play the phone’s video (error {0}). Restart your computer and try again.</value></data>
+  <data name="DecoderFailed" xml:space="preserve"><value>Playing the phone’s video failed (error {0}).</value></data>
   <data name="MainMenu" xml:space="preserve"><value>Main Menu</value></data>
   <data name="ConnectByAddressMenu" xml:space="preserve"><value>Connect by Address…</value></data>
   <data name="PairedPhones" xml:space="preserve"><value>Paired Phones</value></data>
@@ -75,4 +75,6 @@
   <data name="RestartFailed" xml:space="preserve"><value>Close and open Beamcam to use the new language.</value></data>
   <data name="WaitingForPhone" xml:space="preserve"><value>Waiting for the phone</value></data>
   <data name="ConnectInApp" xml:space="preserve"><value>Connect it in the Beamcam app on this computer.</value></data>
+  <data name="CameraInUse" xml:space="preserve"><value>Another Beamcam on this computer is using the camera. Close it and try again.</value></data>
+  <data name="PhoneChanged" xml:space="preserve"><value>This phone has changed since you paired it. If you didn’t reinstall Beamcam on it, don’t connect.</value></data>
 </root>

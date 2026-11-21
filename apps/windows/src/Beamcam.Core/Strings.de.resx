@@ -7,14 +7,14 @@
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="EndDenied" xml:space="preserve"><value>Das Handy hat diesen Computer nicht zugelassen.</value></data>
   <data name="EndTimeout" xml:space="preserve"><value>Auf dem Handy wurde nicht rechtzeitig auf „Zulassen“ getippt.</value></data>
-  <data name="EndBusy" xml:space="preserve"><value>Das Handy wird gerade von einem anderen Computer verwendet.</value></data>
+  <data name="EndBusy" xml:space="preserve"><value>Das Handy wird gerade von einem anderen Computer verwendet. Trenne es dort und versuche es dann erneut.</value></data>
   <data name="EndStopped" xml:space="preserve"><value>Die Übertragung wurde auf dem Handy beendet.</value></data>
-  <data name="EndCamera" xml:space="preserve"><value>Die Kamera des Handys funktioniert nicht mehr.</value></data>
+  <data name="EndCamera" xml:space="preserve"><value>Die Kamera des Handys funktioniert nicht mehr. Schließe andere Kamera-Apps auf deinem Handy und klicke dann auf „Verbinden“.</value></data>
   <data name="EndReplaced" xml:space="preserve"><value>Ein anderes Beamcam auf diesem Computer hat das Handy übernommen.</value></data>
   <data name="EndProtocol" xml:space="preserve"><value>Die Handy-App und diese App passen nicht zusammen. Aktualisiere beide auf die neueste Version.</value></data>
   <data name="EndConnectFailed" xml:space="preserve"><value>Das Handy ist nicht erreichbar. Ist Beamcam darauf geöffnet und im selben WLAN?</value></data>
-  <data name="EndConnectionLost" xml:space="preserve"><value>Die Verbindung zum Handy ist abgebrochen.</value></data>
-  <data name="EndVideoError" xml:space="preserve"><value>Das Video vom Handy konnte nicht angezeigt werden.</value></data>
+  <data name="EndConnectionLost" xml:space="preserve"><value>Die Verbindung zum Handy ist abgebrochen. Prüfe, ob es im selben WLAN ist, und klicke dann auf „Verbinden“.</value></data>
+  <data name="EndVideoError" xml:space="preserve"><value>Das Video vom Handy konnte nicht angezeigt werden. Schließe Beamcam, öffne es wieder und klicke auf „Verbinden“.</value></data>
   <data name="EndForgotten" xml:space="preserve"><value>Dein Handy kennt diesen Computer nicht mehr. Klicke auf „Verbinden“, um ihn erneut zu koppeln.</value></data>
   <data name="EndUnknownPhone" xml:space="preserve"><value>Dieses Handy ist nicht mit diesem Computer gekoppelt. Klicke auf „Verbinden“, um es zu koppeln.</value></data>
   <data name="EndOther" xml:space="preserve"><value>Die Übertragung wurde beendet ({0}).</value></data>
@@ -24,8 +24,8 @@
   <data name="CameraNeedsWindows11" xml:space="preserve"><value>Andere Apps können Beamcam nur unter Windows 11 nutzen.</value></data>
   <data name="CameraAccessDenied" xml:space="preserve"><value>Windows hat Beamcam nicht erlaubt, seine Kamera hinzuzufügen. Prüfe, ob der Kamerazugriff unter Einstellungen → Datenschutz und Sicherheit → Kamera eingeschaltet ist.</value></data>
   <data name="CameraFailed" xml:space="preserve"><value>Die Kamera „Beamcam“ konnte nicht starten (Fehler {0}). Starte deinen Computer neu und versuche es erneut.</value></data>
-  <data name="DecoderMissing" xml:space="preserve"><value>Der Videodecoder von Windows ist nicht verfügbar (Fehler {0}).</value></data>
-  <data name="DecoderFailed" xml:space="preserve"><value>Der Videodecoder von Windows ist ausgefallen (Fehler {0}).</value></data>
+  <data name="DecoderMissing" xml:space="preserve"><value>Dieser Computer kann das Video vom Handy nicht abspielen (Fehler {0}). Starte deinen Computer neu und versuche es erneut.</value></data>
+  <data name="DecoderFailed" xml:space="preserve"><value>Das Video vom Handy konnte nicht abgespielt werden (Fehler {0}).</value></data>
   <data name="MainMenu" xml:space="preserve"><value>Hauptmenü</value></data>
   <data name="ConnectByAddressMenu" xml:space="preserve"><value>Über Adresse verbinden…</value></data>
   <data name="PairedPhones" xml:space="preserve"><value>Gekoppelte Handys</value></data>
@@ -75,4 +75,6 @@
   <data name="RestartFailed" xml:space="preserve"><value>Schließe Beamcam und öffne es wieder, um die neue Sprache zu verwenden.</value></data>
   <data name="WaitingForPhone" xml:space="preserve"><value>Warten auf das Handy</value></data>
   <data name="ConnectInApp" xml:space="preserve"><value>Verbinde es in der Beamcam-App auf diesem Computer.</value></data>
+  <data name="CameraInUse" xml:space="preserve"><value>Ein anderes Beamcam auf diesem Computer nutzt die Kamera. Schließe es und versuche es erneut.</value></data>
+  <data name="PhoneChanged" xml:space="preserve"><value>Dieses Handy hat sich seit dem Koppeln verändert. Wenn du Beamcam darauf nicht neu installiert hast, verbinde dich nicht.</value></data>
 </root>

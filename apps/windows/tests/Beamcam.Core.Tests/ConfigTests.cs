@@ -55,12 +55,34 @@ public sealed class ConfigTests : IDisposable
     }
 
     [Fact]
-    public void ReinstalledPhoneReplacesItsOldPairing()
+    public void AStrangerClaimingAPhonesIdCannotEraseItsPairing()
     {
         var config = Config.Load(ConfigPath);
-        config.Pair("old-key", Key, "phone-1", "Pixel");
-        config.Pair("new-key", new byte[32], "phone-1", "Pixel");
-        Assert.Equal(["new-key"], config.PairedPhones().Select(p => p.Fingerprint));
+        config.Pair("real-key", Key, "phone-1", "Pixel");
+        config.LastPhoneId = "phone-1";
+        config.Pair("other-key", new byte[32], "phone-1", "Pixel");
+        Assert.Equal(Key, config.SecretFor("real-key"));
+        config.Forget("other-key");
+        Assert.Equal("phone-1", config.LastPhoneId);
+        Assert.Equal(Key, Config.Load(ConfigPath).SecretFor("real-key"));
+    }
+
+    [Theory]
+    [InlineData("""{"pairings": {"fp1": {"secret": "01", "secret": "02"}}}""")]
+    [InlineData("""{"last_phone_id": "a", "last_phone_id": "b"}""")]
+    public void DuplicateKeysStartEmpty(string text)
+    {
+        File.WriteAllText(ConfigPath, text);
+        Assert.Empty(Config.Load(ConfigPath).PairedPhones());
+    }
+
+    [Theory]
+    [InlineData("99999999999999")]
+    [InlineData("-5")]
+    public void ImpossibleDatesAreIgnored(string seconds)
+    {
+        File.WriteAllText(ConfigPath, """{"pairings": {"fp1": {"secret": "01", "phone_id": "p", "name": "P", "last_connected": """ + seconds + "}}}");
+        Assert.Equal(0, Assert.Single(Config.Load(ConfigPath).PairedPhones()).LastConnected);
     }
 
     [Fact]

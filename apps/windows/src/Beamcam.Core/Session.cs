@@ -206,8 +206,14 @@ public sealed class Session
             Log.Warning($"protocol error from {Host}: {error.Message}");
             reason = EndReasons.Protocol;
         }
+        catch (Exception error) when (error is System.Text.Json.JsonException or ArgumentException or OverflowException or FormatException)
+        {
+            // Whatever the phone sent must never take the app down.
+            Log.Warning($"bad message from {Host}: {error.Message}");
+            reason = EndReasons.Protocol;
+        }
         catch (Exception error) when (error is IOException or SocketException or ObjectDisposedException or TimeoutException
-            or InvalidOperationException or FormatException or EndOfStreamException)
+            or InvalidOperationException or EndOfStreamException)
         {
             Log.Info($"session with {Host} ended: {error.Message}");
             reason = EndReasons.ConnectionLost;
@@ -260,7 +266,10 @@ public sealed class Session
         {
             Log.Info($"TLS with {Host} failed: {error.Message}");
             ssl.Dispose();
-            return _closed ? EndReasons.Closed : EndReasons.Protocol;
+            if (_closed)
+                return EndReasons.Closed;
+            // A connection that drops mid-handshake is the network, not an incompatible phone.
+            return error is AuthenticationException ? EndReasons.Protocol : EndReasons.ConnectFailed;
         }
         _ssl = ssl;
         var fingerprint = Secure.Fingerprint(ssl.RemoteCertificate!.GetRawCertData());
@@ -327,7 +336,10 @@ public sealed class Session
         }
     }
 
+    const int MaxVideoSide = 8192;
+
     Thread? _udpThread;
+    bool _askedUser;
 
     static int Int(JsonObject body, string key, int fallback)
     {
@@ -335,9 +347,9 @@ public sealed class Session
         {
             return body[key] is JsonValue value ? (value.TryGetValue<int>(out var number) ? number : int.Parse(value.ToString())) : fallback;
         }
-        catch (FormatException)
+        catch (Exception error) when (error is FormatException or OverflowException)
         {
-            throw new ProtocolException($"bad {key} in message");
+            throw new ProtocolException($"bad {key} in message", error);
         }
     }
 
@@ -348,6 +360,7 @@ public sealed class Session
         switch (message.Type)
         {
             case Protocol.Pending:
+                _askedUser = true;
                 _listener.OnPending(Secure.PairingCode(fingerprint));
                 break;
             case Protocol.Accept:
@@ -358,11 +371,16 @@ public sealed class Session
                     throw new ProtocolException($"unsupported codec '{codec}'");
                 var info = new StreamInfo(Str(body, "deviceId", ""), Str(body, "deviceName", "Phone"), Int(body, "width", 1280),
                     Int(body, "height", 720), Int(body, "fps", 30), Str(body, "facing", "front"));
+                if (info.Width is < 1 or > MaxVideoSide || info.Height is < 1 or > MaxVideoSide)
+                    throw new ProtocolException($"bad video size {info.Width}x{info.Height}");
                 var newSecret = body["secret"] is JsonValue s && s.TryGetValue<string>(out var text) ? text : null;
                 if (secret is null)
                 {
                     if (newSecret is not { Length: 64 })
                         throw new ProtocolException("phone accepted without pairing");
+                    // A real phone always asks its user first; only an impostor skips the prompt and the code.
+                    if (!_askedUser)
+                        throw new ProtocolException("phone paired without asking");
                     _pairings.Pair(fingerprint, Convert.FromHexString(newSecret), info.DeviceId, info.DeviceName);
                 }
                 else
@@ -383,6 +401,8 @@ public sealed class Session
                 if (_udp is not null && body.ContainsKey("udpPort") && key.Length == 32 && tcp.RemoteEndPoint is IPEndPoint peer)
                 {
                     var port = Int(body, "udpPort", 0);
+                    if (port is < 1 or > 65535)
+                        throw new ProtocolException($"bad UDP port {port}");
                     _udpThread = new Thread(() => UdpLoop(_udp, V4(peer.Address), port, key)) { IsBackground = true, Name = "udp" };
                     _udpThread.Start();
                 }

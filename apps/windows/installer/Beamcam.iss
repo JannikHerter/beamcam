@@ -110,7 +110,13 @@ begin
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  Code: Integer;
 begin
   if CurUninstallStep = usUninstall then
+  begin
+    // A running app would keep its files, and the camera, from being removed.
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/f /im Beamcam.exe /im beamcam-cli.exe', '', SW_HIDE, ewWaitUntilTerminated, Code);
     StopCameraService();
+  end;
 end;

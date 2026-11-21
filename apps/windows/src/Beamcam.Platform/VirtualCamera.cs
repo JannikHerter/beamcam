@@ -35,6 +35,7 @@ public sealed class VirtualCamera : IDisposable
             0x80040154 => Text.Get("CameraNotRegistered"),
             0x8007007F => Text.Get("CameraNeedsWindows11"),
             0x80070005 => Text.Get("CameraAccessDenied"),
+            0x800700B7 => Text.Get("CameraInUse"),
             _ => Text.Format("CameraFailed", $"0x{hr:x8}"),
         };
         return null;

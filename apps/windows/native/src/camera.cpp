@@ -67,6 +67,7 @@ struct BcCamera {
     std::thread acceptor;
     std::vector<std::thread> clients;
     bool mfStarted = false;
+    HANDLE owner = nullptr;
 
     BcCamera() {
         bc::Nv12Frame black(bc::kCameraWidth, bc::kCameraHeight);
@@ -195,6 +196,7 @@ struct BcCamera {
         }
         CloseHandle(stop);
         if (mfStarted) MFShutdown();
+        if (owner) CloseHandle(owner);
     }
 };
 
@@ -210,6 +212,11 @@ HRESULT __stdcall BcCameraCreate(BcCamera** out) {
     if (!out) return E_POINTER;
     *out = nullptr;
     auto camera = std::make_unique<BcCamera>();
+    // Windows has one "Beamcam" per session. A second app must not touch it: its cleanup would remove
+    // the camera the first one is serving. Windows frees the mutex when the owner exits, even on a crash.
+    camera->owner = CreateMutexW(nullptr, FALSE, L"Local\\Beamcam.VirtualCamera");
+    if (!camera->owner) return HRESULT_FROM_WIN32(GetLastError());
+    if (GetLastError() == ERROR_ALREADY_EXISTS) return HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS);
     HRESULT hr = MFStartup(MF_VERSION, MFSTARTUP_LITE);
     if (FAILED(hr)) return hr;
     camera->mfStarted = true;

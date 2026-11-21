@@ -12,6 +12,7 @@ public sealed record PairedPhone(string Fingerprint, string PhoneId, string Name
 public sealed class Config : IPairingStore
 {
     static readonly Lock Guard = new();
+    const long MaxUnixSeconds = 253402300799; // the last second DateTimeOffset can show
 
     /// <summary>Phones this computer paired with, by certificate fingerprint (hex). The secret is what
     /// the phone allowed.</summary>
@@ -63,7 +64,7 @@ public sealed class Config : IPairingStore
                         Secret = secret,
                         PhoneId = JsonText(entry["phone_id"]) ?? "",
                         Name = JsonText(entry["name"]) is { Length: > 0 } name ? name : "Phone",
-                        LastConnected = entry["last_connected"] is JsonValue v && v.TryGetValue<long>(out var t) ? t : 0,
+                        LastConnected = entry["last_connected"] is JsonValue v && v.TryGetValue<long>(out var t) && t is > 0 and <= MaxUnixSeconds ? t : 0,
                     };
                 }
             }
@@ -71,7 +72,8 @@ public sealed class Config : IPairingStore
         catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException)
         {
         }
-        catch (Exception error) when (error is IOException or JsonException or UnauthorizedAccessException or InvalidOperationException)
+        catch (Exception error) when (error is IOException or JsonException or UnauthorizedAccessException or InvalidOperationException
+            or ArgumentException or FormatException)
         {
             Log.Warning($"ignoring unreadable {config._path}: {error.Message}");
         }
@@ -135,9 +137,8 @@ public sealed class Config : IPairingStore
     {
         lock (Guard)
         {
-            // A phone that got a new key (app reinstalled) replaces its old pairing.
-            foreach (var old in _pairings.Where(p => phoneId.Length > 0 && p.Value.PhoneId == phoneId).Select(p => p.Key).ToList())
-                _pairings.Remove(old);
+            // Never drops another pairing with the same phone id: ids come from the network, so a stranger
+            // could otherwise erase the real phone's pin by claiming its id.
             _pairings[fingerprint] = new Pairing
             {
                 Secret = Convert.ToHexStringLower(secret), PhoneId = phoneId, Name = name, LastConnected = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
@@ -171,7 +172,8 @@ public sealed class Config : IPairingStore
     {
         lock (Guard)
         {
-            if (_pairings.Remove(fingerprint, out var entry) && entry.PhoneId == LastPhoneId)
+            if (_pairings.Remove(fingerprint, out var entry) && entry.PhoneId == LastPhoneId
+                && !_pairings.Values.Any(p => p.PhoneId == entry.PhoneId))
                 LastPhoneId = null;
         }
         Save();

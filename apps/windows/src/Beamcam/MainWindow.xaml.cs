@@ -245,6 +245,7 @@ public partial class MainWindow : Window, IControllerEvents
     public void OnEnded(string reason)
     {
         var detail = _controller?.OutputError;
+        var changedPhone = reason == EndReasons.UnknownPhone && _reconnector.Target?.PhoneId is { } phoneId && _config.IsPaired(phoneId);
         _controller = null;
         CompositionTarget.Rendering -= UpdatePreview;
         if (_reconnector.Ended(reason) is { } retry)
@@ -258,7 +259,9 @@ public partial class MainWindow : Window, IControllerEvents
         }
         ShowPhones();
         RenderPhones();
-        if (reason != EndReasons.Closed)
+        if (changedPhone)
+            ShowToast(Text.Get("PhoneChanged"));
+        else if (reason != EndReasons.Closed)
             ShowToast(reason == EndReasons.VideoError && detail is not null ? $"{EndReasons.Message(reason)} {detail}" : EndReasons.Message(reason));
     }
 

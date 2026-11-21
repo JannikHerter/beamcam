@@ -95,6 +95,64 @@ public class SessionTests
     }
 
     [Fact]
+    public void PairingWithoutThePhoneAskingIsRefused()
+    {
+        // An impostor that skips the prompt would never show the user a code.
+        var phone = new FakePhone([FakePhone.Accept(b => b["secret"] = Convert.ToHexStringLower(SecretBytes))]);
+        var pairings = new MemoryPairings();
+        var (_, recorder) = RunSession(phone.Port, pairings, allowPairing: true);
+        Assert.Equal(["end", "protocol"], recorder.Snapshot()[^1]);
+        Assert.Empty(pairings.Secrets);
+    }
+
+    public static TheoryData<string> BadAccepts => new()
+    {
+        """{"protocol":2,"codec":"h264","width":99999999999,"height":720}""",
+        """{"protocol":2,"codec":"h264","width":-1,"height":720}""",
+        """{"protocol":2,"codec":"h264","width":1280,"width":640,"height":720}""",
+        """{"protocol":2,"codec":"h264","codec":"h264","width":1280,"height":720}""",
+        """{"protocol":2,"codec":"h264","width":"wide","height":720}""",
+        """{"protocol":2,"codec":"h264","width":1280,"height":720,"udpPort":70000,"udpKey":"0000000000000000000000000000000000000000000000000000000000000000"}""",
+    };
+
+    [Theory]
+    [MemberData(nameof(BadAccepts))]
+    public void MalformedAcceptEndsTheSessionCleanly(string accept)
+    {
+        var phone = new FakePhone([Protocol.Encode(Protocol.Accept, System.Text.Encoding.UTF8.GetBytes(accept))]);
+        var (_, recorder) = RunSession(phone.Port, new MemoryPairings(Known()));
+        Assert.Equal(["end", "protocol"], recorder.Snapshot()[^1]);
+    }
+
+    [Theory]
+    [InlineData(Protocol.Camera, """{"rotation":90,"rotation":180}""")]
+    [InlineData(Protocol.Camera, """{"rotation":99999999999}""")]
+    [InlineData(Protocol.End, """{"reason":"a","reason":"b"}""")]
+    public void MalformedMessagesEndTheSessionCleanly(byte type, string body)
+    {
+        var phone = new FakePhone([FakePhone.Accept(), Protocol.Encode(type, System.Text.Encoding.UTF8.GetBytes(body))]);
+        var (_, recorder) = RunSession(phone.Port, new MemoryPairings(Known()));
+        Assert.Equal(["end", "protocol"], recorder.Snapshot()[^1]);
+    }
+
+    [Fact]
+    public void ConnectionDroppedDuringTlsIsNotAVersionProblem()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        new Thread(() =>
+        {
+            using var client = listener.AcceptTcpClient();
+            client.GetStream().ReadByte();
+            client.Client.Close();
+            listener.Stop();
+        }) { IsBackground = true }.Start();
+        var (_, recorder) = RunSession(port, new MemoryPairings(Known()));
+        Assert.Equal(["end", EndReasons.ConnectFailed], recorder.Snapshot()[^1]);
+    }
+
+    [Fact]
     public void SetCameraFromAnotherThread()
     {
         var phone = new FakePhone([FakePhone.Accept()], holdOpen: true);
