@@ -53,4 +53,5 @@ Language** on the phone or **☰ → Language** on the computer.
   **Remove all**, and they have to ask again. **⋮ → Turn off** stops the phone from being found.
 - On the computer: **☰ → Paired Phones** lets you **Forget** one phone or all of them. On Linux,
   **☰ → Remove Virtual Camera** removes the camera. On Windows the camera goes away when you close
-  Beamcam; uninstall Beamcam in **Settings → Apps** to remove everything.
+  Beamcam, and uninstalling it in **Settings → Apps** removes the app and the camera. It keeps your
+  paired phones in case you install it again, so **Forget** them first if you don't want that.

@@ -37,13 +37,27 @@ ShowLanguageDialog=auto
 Name: "en"; MessagesFile: "compiler:Default.isl"
 Name: "de"; MessagesFile: "compiler:Languages\German.isl"
 
+; Only the pages people see: Inno's stock German says "Sie".
 [Messages]
-en.WelcomeLabel2=Beamcam turns your Android phone into a webcam for this computer.%n%nAfter installing, open Beamcam here and on your phone, and click Connect.
-de.WelcomeLabel2=Beamcam macht dein Android-Handy zur Webcam für diesen Computer.%n%nÖffne Beamcam nach der Installation hier und auf deinem Handy und klicke auf „Verbinden“.
+en.FinishedHeadingLabel=Beamcam is installed
+de.FinishedHeadingLabel=Beamcam ist installiert
+en.FinishedLabel=Open Beamcam here and on your phone, then click Connect.
+de.FinishedLabel=Öffne Beamcam hier und auf deinem Handy und klicke dann auf „Verbinden“.
+en.WizardReady=Ready to install
+en.ReadyLabel1=Beamcam is ready to be installed on your computer.
+en.ReadyLabel2b=Click Install to start.
+en.ClickFinish=
+de.ClickFinish=
+de.WizardReady=Bereit zur Installation
+de.ReadyLabel1=Beamcam kann jetzt auf deinem Computer installiert werden.
+de.ReadyLabel2b=Klicke auf „Installieren“, um loszulegen.
+de.WizardInstalling=Wird installiert
+de.InstallingLabel=Einen Moment, Beamcam wird installiert.
+de.ConfirmUninstall=Möchtest du Beamcam von diesem Computer entfernen?
+de.UninstallStatusLabel=Einen Moment, Beamcam wird entfernt.
+de.UninstalledAll=Beamcam wurde von diesem Computer entfernt.
 
 [CustomMessages]
-en.DesktopIcon=Put Beamcam on the desktop
-de.DesktopIcon=Beamcam auf den Desktop legen
 en.FindPhone=Allowing Beamcam to find your phone…
 de.FindPhone=Beamcam darf dein Handy finden…
 en.OpenBeamcam=Open Beamcam
@@ -51,16 +65,12 @@ de.OpenBeamcam=Beamcam öffnen
 en.NeedsWindows11=Beamcam needs Windows 11. This computer has an older Windows.
 de.NeedsWindows11=Beamcam braucht Windows 11. Auf diesem Computer läuft ein älteres Windows.
 
-[Tasks]
-Name: desktopicon; Description: "{cm:DesktopIcon}"; Flags: unchecked
-
 [Files]
 Source: "..\out\app\*"; Excludes: "BeamcamCamera.dll,*.pdb"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Source: "..\out\app\BeamcamCamera.dll"; DestDir: "{app}"; Flags: ignoreversion regserver
 
 [Icons]
 Name: "{autoprograms}\Beamcam"; Filename: "{app}\Beamcam.exe"
-Name: "{autodesktop}\Beamcam"; Filename: "{app}\Beamcam.exe"; Tasks: desktopicon
 
 [Run]
 ; Phones announce themselves on the local network. Answers to Beamcam's own questions get through
