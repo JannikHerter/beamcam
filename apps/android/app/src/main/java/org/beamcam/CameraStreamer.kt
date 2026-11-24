@@ -2,6 +2,7 @@ package org.beamcam
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
@@ -52,6 +53,9 @@ class CameraStreamer(
     private var camera: CameraDevice? = null
     private var session: CameraCaptureSession? = null
     @Volatile private var released = false
+
+    /** Bumped on every open and close, so callbacks from a camera that was switched away from do nothing. */
+    private var generation = 0
 
     /** Sensor orientation and facing of the camera currently open, for [imageRotation]. */
     @Volatile var sensorOrientation = 0
@@ -153,34 +157,49 @@ class CameraStreamer(
         sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
         frontFacing = characteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT
         val fpsRange = pickFpsRange(characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES), format.fps)
+        val opened = ++generation
+        // Callbacks run on the camera thread, like every change to [generation].
+        fun current() = !released && opened == generation
 
         cameraManager.openCamera(id, executor, object : CameraDevice.StateCallback() {
             override fun onOpened(device: CameraDevice) {
-                if (released) {
+                if (!current()) {
                     device.close()
                     return
                 }
                 camera = device
-                createSession(device, fpsRange, onCameraReady)
+                // The camera can be taken away at any moment, even between these calls.
+                try {
+                    createSession(device, fpsRange, ::current, onCameraReady)
+                } catch (e: CameraAccessException) {
+                    failed(device, e)
+                } catch (e: IllegalStateException) {
+                    failed(device, e)
+                }
             }
 
             override fun onDisconnected(device: CameraDevice) {
                 device.close()
-                if (camera == device) {
-                    camera = null
-                    if (!released) onError("Camera was taken by another app")
-                }
+                if (camera == device) camera = null
+                if (current()) onError("Camera was taken by another app")
             }
 
             override fun onError(device: CameraDevice, error: Int) {
                 device.close()
                 if (camera == device) camera = null
-                if (!released) onError("Camera error $error")
+                if (current()) onError("Camera error $error")
+            }
+
+            private fun failed(device: CameraDevice, e: Exception) {
+                Log.w(TAG, "camera went away while starting", e)
+                device.close()
+                if (camera == device) camera = null
+                if (current()) onError(e.message ?: e.javaClass.simpleName)
             }
         })
     }
 
-    private fun createSession(device: CameraDevice, fpsRange: Range<Int>?, onCameraReady: () -> Unit) {
+    private fun createSession(device: CameraDevice, fpsRange: Range<Int>?, current: () -> Boolean, onCameraReady: () -> Unit) {
         val surface = encoderSurface ?: return
         val config = SessionConfiguration(
             SessionConfiguration.SESSION_REGULAR,
@@ -188,24 +207,37 @@ class CameraStreamer(
             executor,
             object : CameraCaptureSession.StateCallback() {
                 override fun onConfigured(session: CameraCaptureSession) {
-                    if (released || camera != device) {
+                    if (!current() || camera != device) {
                         session.close()
                         return
                     }
                     this@CameraStreamer.session = session
-                    val request = device.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply {
-                        addTarget(surface)
-                        if (fpsRange != null) set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange)
-                        set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
-                        set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO)
-                    }.build()
-                    session.setRepeatingRequest(request, null, handler)
+                    try {
+                        val request = device.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply {
+                            addTarget(surface)
+                            if (fpsRange != null) set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange)
+                            set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
+                            set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO)
+                        }.build()
+                        session.setRepeatingRequest(request, null, handler)
+                    } catch (e: CameraAccessException) {
+                        lost(e)
+                        return
+                    } catch (e: IllegalStateException) {
+                        lost(e)
+                        return
+                    }
                     ready = true
                     onCameraReady()
                 }
 
                 override fun onConfigureFailed(session: CameraCaptureSession) {
-                    onError("Could not configure camera")
+                    if (current() && camera == device) onError("Could not configure camera")
+                }
+
+                private fun lost(e: Exception) {
+                    Log.w(TAG, "camera went away while configuring", e)
+                    if (current() && camera == device) onError(e.message ?: e.javaClass.simpleName)
                 }
             },
         )
@@ -213,6 +245,7 @@ class CameraStreamer(
     }
 
     private fun closeCamera() {
+        generation++
         ready = false
         try {
             session?.close()
