@@ -99,6 +99,8 @@ Before calling work done, say which of these applied:
 - Linux unit tests: `cd apps/linux && PYTHONPATH=src python3 -m unittest discover -s tests -t .`
 - Windows unit tests: `cd apps/windows && dotnet test tests/Beamcam.Core.Tests` (runs on Linux too, see
   [development](docs/operations/development.md#windows)) and `native/tests/convert_tests.cpp`.
+- CI (`.github/workflows/ci.yml`) runs all of the above on every push to main and every pull request; its
+  Windows job also builds the native DLL with MSVC and the installer.
 - Windows end to end needs a Windows 11 machine or VM on the same network as a phone; the runbook has the steps.
 - End to end on an emulator: `scripts/e2e-emulator.sh` (see [development](docs/operations/development.md#end-to-end-test)).
   It also exercises the virtual camera when a writable v4l2loopback device exists.
