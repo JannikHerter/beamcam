@@ -49,6 +49,7 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
   - `Protocol.kt`, `Orientation.kt`: wire format and rotation math (unit tested).
   - `MainActivity.kt`: Compose UI. It only reads `WebcamState` and sends intents to the service.
   - `AppLanguage.kt`: the language picked in the app; translations are in `res/values-*/strings.xml`.
+- `fastlane/metadata/android/`: the phone app's F-Droid listing (texts, icon, changelogs), per language.
 - `apps/linux/src/beamcam/`
   - `protocol.py` mirrors `Protocol.kt`, `secure.py` mirrors `Secure.kt`. `client.py` is one session
     (TLS control, sealed UDP video); `config.py` keeps the pairings.
@@ -59,8 +60,9 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
   - `ui.py` (GTK) and `cli.py` (scripts and tests) are thin layers over the controller. Only the
     window reconnects; the CLI exits so scripts see the failure.
   - `virtualcam.py` and `data/setup-virtual-camera` find and create the v4l2loopback device.
-  - `packaging/`: Arch and Debian packages. `install-data.sh` installs the menu entry, icon,
-    app info and helper for both; a new file in `apps/linux/data` goes there too.
+  - `packaging/`: Debian, Arch (also the AUR package) and Fedora packages, each built in a container
+    by its `build-*.sh`. `install-data.sh` installs the menu entry, icon, app info and helper for
+    all of them; a new file in `apps/linux/data` goes there too.
 - `apps/windows/` (see its README for the picture):
   - `src/Beamcam.Core` (C#, any OS) ports the Linux core one to one: `Protocol.cs`, `Secure.cs`,
     `Session.cs`, `Reassembler.cs`, `Mdns.cs`, `Reconnector.cs`, `Config.cs`, `Controller.cs`.

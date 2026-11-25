@@ -1,0 +1,24 @@
+<p>Beamcam macht dein Android-Handy zur kabellosen Webcam für deinen Computer. Nutze sie in deinem Videoanruf, deinem Browser und jeder anderen App, die eine Kamera verwendet.</p>
+
+<p><b>So funktioniert es</b></p>
+<ol>
+<li>Installiere Beamcam auf deinem Handy und auf deinem Computer (Linux oder Windows 11). Die Computer-App findest du unter https://github.com/JannikHerter/beamcam/releases</li>
+<li>Öffne beide. Dein Handy erscheint auf dem Computer: Klicke auf <b>Verbinden</b>.</li>
+<li>Tippe beim ersten Mal auf dem Handy auf <b>Zulassen</b>.</li>
+<li>Wähle in deinem Videoanruf die Kamera <b>Beamcam</b>.</li>
+</ol>
+
+<p><b>Privat von Anfang an</b></p>
+<ul>
+<li>Die Kamera geht erst an, wenn du den Computer auf deinem Handy zugelassen hast, und das Handy zeigt immer an, wenn es überträgt.</li>
+<li>Das Video geht verschlüsselt direkt von deinem Handy über dein WLAN an deinen Computer. Nichts wird ins Internet hochgeladen.</li>
+<li>Kein Konto, keine Cloud, keine Werbung, kein Tracking.</li>
+</ul>
+
+<p><b>Funktionen</b></p>
+<ul>
+<li>Vordere und hintere Kamera. Dreh das Handy quer für ein breites Bild.</li>
+<li>Überträgt weiter, wenn dein Handy gesperrt ist. Die Übertragung beendest du über die Benachrichtigung.</li>
+<li>Geringe Verzögerung, damit dein Bild mit deiner Stimme mithält.</li>
+<li>Funktioniert im WLAN zu Hause und über den Hotspot deines Handys. Braucht Android 9 oder neuer.</li>
+</ul>

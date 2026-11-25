@@ -18,6 +18,8 @@ You need Beamcam on the phone and on the computer.
   `sudo apt install ./beamcam_*.deb` in the folder you saved it to.
 - **Arch or Manjaro:** download the `.pkg.tar.zst` file and run `sudo pacman -U beamcam-*.pkg.tar.zst`
   in the folder you saved it to.
+- **Fedora:** download the `.rpm` file and open it, or run `sudo dnf install ./beamcam-*.rpm`
+  in the folder you saved it to.
 
 ## On the computer
 

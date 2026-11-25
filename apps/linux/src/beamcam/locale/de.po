@@ -254,6 +254,12 @@ msgstr "„{name}“ vergessen."
 msgid "The virtual camera is still in use. Close apps using it and try again."
 msgstr "Die virtuelle Kamera wird noch verwendet. Schließe die Apps, die sie nutzen, und versuche es erneut."
 
+msgid "Secure Boot blocked the driver. Allow its key once, then try again."
+msgstr "Secure Boot hat den Treiber blockiert. Erlaube seinen Schlüssel einmalig und versuche es dann erneut."
+
+msgid "Open Guide"
+msgstr "Anleitung öffnen"
+
 msgid "v4l2loopback is not installed."
 msgstr "v4l2loopback ist nicht installiert."
 

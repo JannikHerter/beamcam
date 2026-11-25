@@ -1,0 +1,24 @@
+<p>Beamcam turns your Android phone into a wireless webcam for your computer. Use it in your video call, your browser and any other app that uses a camera.</p>
+
+<p><b>How it works</b></p>
+<ol>
+<li>Install Beamcam on your phone and on your computer (Linux or Windows 11). The computer app is at https://github.com/JannikHerter/beamcam/releases</li>
+<li>Open both. Your phone shows up on the computer: click <b>Connect</b>.</li>
+<li>Tap <b>Allow</b> on the phone the first time.</li>
+<li>In your video call, pick the camera <b>Beamcam</b>.</li>
+</ol>
+
+<p><b>Private by default</b></p>
+<ul>
+<li>The camera only turns on after you allowed that computer on your phone, and the phone always shows when it is streaming.</li>
+<li>The video goes straight from your phone to your computer over your Wi-Fi, encrypted. Nothing is uploaded to the internet.</li>
+<li>No account, no cloud, no ads, no tracking.</li>
+</ul>
+
+<p><b>Features</b></p>
+<ul>
+<li>Front and back camera. Turn the phone sideways for a wide picture.</li>
+<li>Keeps streaming while your phone is locked. Stop it from the notification.</li>
+<li>Low delay, so your picture keeps up with your voice.</li>
+<li>Works on home Wi-Fi and on your phone's hotspot. Needs Android 9 or newer.</li>
+</ul>

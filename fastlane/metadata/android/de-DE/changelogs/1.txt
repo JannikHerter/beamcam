@@ -1,0 +1,6 @@
+Die erste öffentliche Version.
+• Nutze dein Handy als Webcam unter Linux und Windows 11, über dein WLAN.
+• Klicke auf dem Computer auf Verbinden und tippe auf dem Handy auf Zulassen. Danach reicht es, beide Apps zu öffnen.
+• Vordere und hintere Kamera. Dreh das Handy quer für ein breites Bild.
+• Privat: Das Video bleibt in deinem WLAN und ist verschlüsselt. Kein Konto, keine Cloud.
+• Englisch und Deutsch.

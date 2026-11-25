@@ -27,6 +27,23 @@ are on the same Wi-Fi. VPNs on the computer can also get in the way; try turning
   `media.webrtc.camera.allow-pipewire` to `false`, then restart Firefox.
 - After installing the driver, restart your computer once.
 
+## Secure Boot blocks the virtual camera
+
+With Secure Boot on, your computer only loads drivers it trusts. If setting up the virtual camera
+says Secure Boot blocked the driver, allow the driver's key once (**Open Guide** in that message
+leads here):
+
+1. Open a terminal, run the line for your system and pick a one-time password when it asks:
+   - **Fedora:** `sudo kmodgenca -a && sudo akmods --rebuild && sudo mokutil --import /etc/pki/akmods/certs/public_key.der`
+   - **Ubuntu, Linux Mint, Pop!_OS:** `sudo mokutil --import /var/lib/shim-signed/mok/MOK.der`
+   - **Debian:** `sudo mokutil --import /var/lib/dkms/mok.pub`
+   - **Other systems:** search for “Secure Boot” and “v4l2loopback” together with your system's
+     name, or turn Secure Boot off in your computer's firmware settings.
+2. Restart and watch the screen. When a blue screen says **Press any key**, press a key within
+   10 seconds. Choose **Enroll MOK**, then **Continue** and **Yes**, type the password, and choose
+   **Reboot**. If your computer starts normally instead, do step 1 again.
+3. Open Beamcam and click **Set Up** again.
+
 ## The picture is sideways or upside down
 
 Turn the phone once; the picture follows the phone. If your phone's rotation lock is on, the

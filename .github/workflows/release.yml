@@ -22,6 +22,8 @@ jobs:
       version: ${{ steps.v.outputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the last release's tag, to compare versionCode
       - id: v
         env:
           TAG: ${{ github.ref_name }}
@@ -85,19 +87,16 @@ jobs:
       - name: Debian and Ubuntu (.deb)
         run: apps/linux/packaging/build-deb.sh debian:13 "$RUNNER_TEMP/out"
       - name: Arch and Manjaro (.pkg.tar.zst)
-        run: |
-          docker run --rm -v "$PWD/apps/linux:/src:ro" -v "$RUNNER_TEMP/out:/out" archlinux:latest bash -euc '
-            pacman -Syu --noconfirm --needed base-devel python python-build python-installer python-setuptools python-wheel >/dev/null
-            useradd -m builder && cp -r /src /home/builder/linux && chown -R builder /home/builder/linux
-            cd /home/builder/linux/packaging/arch
-            su builder -c "PKGDEST=/home/builder/pkg makepkg --nodeps --noconfirm"
-            cp /home/builder/pkg/*.pkg.tar.zst /out/ && chown "$(stat -c %u:%g /out)" /out/*'
+        run: apps/linux/packaging/build-arch.sh archlinux:latest "$RUNNER_TEMP/out"
+      - name: Fedora (.rpm)
+        run: apps/linux/packaging/build-rpm.sh fedora:45 "$RUNNER_TEMP/out"
       - uses: actions/upload-artifact@v7
         with:
           name: release-linux
           path: |
             ${{ runner.temp }}/out/*.deb
             ${{ runner.temp }}/out/*.pkg.tar.zst
+            ${{ runner.temp }}/out/*.rpm
 
   publish:
     name: Publish the release

@@ -33,20 +33,34 @@ menu entry or icon; only the packages below do.
 
 ## Packages
 
-What users install. Both put the app in the app menu with its icon, and install the virtual
+What users install. Each puts the app in the app menu with its icon, and installs the virtual
 camera helper with a polkit action, so the password prompt says what it is for.
-`apps/linux/packaging/install-data.sh` lists those files once for every package.
+`apps/linux/packaging/install-data.sh` lists those files once for every package. Each script
+builds the checkout in a clean container and writes to `apps/linux/packaging/dist/`; the Arch and
+Fedora ones take only the files git tracks (with your changes), so a new file needs `git add` first.
 
 ```sh
-# Arch, Manjaro: build and install the checkout
-cd apps/linux/packaging/arch && makepkg -si
-# Debian 13+, Ubuntu 26.04+: builds in a container, writes apps/linux/packaging/dist/*.deb
+# Debian 13+, Ubuntu 26.04+
 apps/linux/packaging/build-deb.sh
 sudo apt install ./apps/linux/packaging/dist/beamcam_*.deb
+# Arch, Manjaro
+apps/linux/packaging/build-arch.sh
+sudo pacman -U apps/linux/packaging/dist/beamcam-*.pkg.tar.zst
+# Fedora
+apps/linux/packaging/build-rpm.sh
+sudo dnf install ./apps/linux/packaging/dist/beamcam-*.noarch.rpm
 ```
 
 Older releases such as Ubuntu 24.04 lack `gstreamer1.0-gtk4`, which the preview needs.
-`makepkg` and `dpkg-buildpackage` leave `build/` in `apps/linux`; it is ignored by git.
+
+- **Arch:** `arch/PKGBUILD` is also the AUR package. On its own it downloads the release tarball;
+  `build-arch.sh` puts a tarball of the checkout next to it (`source-tarball.sh`), which makepkg
+  uses instead. It keeps `sha256sums=('SKIP')`, because the tarball's checksum is only known once
+  the tag exists; `arch/update-aur.sh` fills it in for the AUR.
+- **Fedora:** one `.rpm` serves every Fedora release. It installs the app into
+  `/usr/share/beamcam` with a small `/usr/bin/beamcam` launcher instead of the versioned
+  site-packages, so it does not depend on one Python version. Fedora's FFmpeg cannot decode H.264,
+  so it uses OpenH264 (`openh264dec`), and v4l2loopback comes from RPM Fusion (`akmod-v4l2loopback`).
 
 ## Translations
 
@@ -184,16 +198,33 @@ beamcam-lan` (and `docker rmi dockurr/windows`).
 ## Releases
 
 Pushing a tag `vX.Y.Z` runs `.github/workflows/release.yml`: it checks that every file says that
-version, runs CI, builds the signed phone app, both Linux packages and the Windows installer, and
+version, runs CI, builds the signed phone app, the Debian, Arch and Fedora packages and the Windows installer, and
 publishes them with `SHA256SUMS.txt` as a GitHub release. Versions starting with `0.` are marked
 pre-release.
 
 1. Set the new version everywhere `scripts/check-version.sh` looks, and raise `versionCode` in
    `apps/android/app/build.gradle.kts` by one (Android refuses an update with the same code).
    Add a section to `CHANGELOG.md` (it becomes the release notes), an entry on top of
-   `apps/linux/packaging/debian/changelog` and a `<release>` in the metainfo.
-2. `scripts/check-version.sh X.Y.Z`, then commit and push.
+   `apps/linux/packaging/debian/changelog` and of the `%changelog` in
+   `apps/linux/packaging/rpm/beamcam.spec`, a `<release>` in the metainfo, and the phone's store
+   changelog `fastlane/metadata/android/{en-US,de-DE}/changelogs/<versionCode>.txt` (at most 500
+   characters, shown by F-Droid).
+2. `scripts/check-version.sh X.Y.Z`, then commit and push. It also checks that `versionCode` is
+   higher than at the last release's tag.
 3. `git tag vX.Y.Z && git push origin vX.Y.Z`, and watch the Release workflow.
+4. Once the release is published, update the AUR package: `apps/linux/packaging/arch/update-aur.sh
+   <checkout of ssh://aur@aur.archlinux.org/beamcam.git>` on Arch or Manjaro, then commit and push
+   there. F-Droid needs nothing: it finds the new tag by itself and builds it within a few days.
+
+The F-Droid listing (texts, icon, changelogs, and screenshots in `images/phoneScreenshots/` once
+there are some) lives in `fastlane/metadata/android/`, one folder per language; F-Droid reads it
+from the tagged commit. F-Droid builds the phone app
+from source and publishes our signed APK when its build matches ours byte for byte, so phones can
+update between the GitHub download and F-Droid. Keep the build reproducible: no timestamps or
+machine-specific paths in the APK, and no dependency on the build machine beyond the JDK and SDK.
+F-Droid's recipe (`metadata/org.beamcam.yml` in fdroiddata) downloads our APK as
+`Beamcam-X.Y.Z.apk` from the release and builds with JDK 21; renaming the download or changing
+the JDK in `release.yml` needs the same change there, or F-Droid stops publishing updates.
 
 The phone app is signed with the release key. Phones only accept an update signed with the same
 key, so losing it means every user has to uninstall and set Beamcam up again. The maintainer keeps

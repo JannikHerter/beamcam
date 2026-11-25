@@ -55,6 +55,13 @@ android {
         compose = true
     }
 
+    // AGP would add a dependency list encrypted for Google Play to the signing block. F-Droid
+    // rejects that blob, and it keeps F-Droid's build from matching ours byte for byte.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     lint {
         // targetSdk 37 needs the local network permission flow; see docs/internals/overview.md.
         disable += "OldTargetApi"

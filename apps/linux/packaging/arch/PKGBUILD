@@ -1,5 +1,5 @@
-# Builds the checkout this file lives in: cd apps/linux/packaging/arch && makepkg -si
-# An AUR package would download a release tarball into source=() instead.
+# The AUR package "beamcam". It downloads the release; packaging/build-arch.sh builds this
+# checkout with it instead, and arch/update-aur.sh fills in the checksum for the AUR.
 pkgname=beamcam
 pkgver=0.1.0
 pkgrel=1
@@ -13,13 +13,16 @@ depends=(
 )
 optdepends=('v4l2loopback-dkms: the virtual camera other apps see (on Manjaro: linuxXY-v4l2loopback)')
 makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
 
 build() {
-  cd "$startdir/../.."
-  python -m build --wheel --no-isolation --outdir "$srcdir/dist"
+  cd "$pkgname-$pkgver/apps/linux"
+  python -m build --wheel --no-isolation
 }
 
 package() {
-  python -m installer --destdir="$pkgdir" "$srcdir"/dist/*.whl
-  sh "$startdir/../install-data.sh" "$pkgdir"
+  cd "$pkgname-$pkgver/apps/linux"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  sh packaging/install-data.sh "$pkgdir"
 }

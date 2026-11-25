@@ -17,7 +17,15 @@ has_device() {
 
 load_module() {
     # The quotes keep the space in the label; modprobe passes them on to the kernel.
-    modprobe v4l2loopback $OPTIONS card_label="\"$LABEL\""
+    if ! output="$(modprobe v4l2loopback $OPTIONS card_label="\"$LABEL\"" 2>&1)"; then
+        case "$output" in
+            *"Key was rejected"*)
+                echo "Secure Boot blocked the driver. Allow its key once, then try again." >&2
+                exit 4 ;;
+        esac
+        echo "$output" >&2
+        return 1
+    fi
 }
 
 if [ "${1:-}" = "--remove" ]; then

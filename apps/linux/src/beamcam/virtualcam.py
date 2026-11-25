@@ -15,13 +15,20 @@ LABEL = "Beamcam"
 SYSFS = Path("/sys/class/video4linux")
 INSTALLED_HELPER = Path("/usr/lib/beamcam/setup-virtual-camera")
 
+SECURE_BOOT_BLOCKED = N_("Secure Boot blocked the driver. Allow its key once, then try again.")
 # What data/setup-virtual-camera prints on failure, so the window can show it translated.
 HELPER_MESSAGES = (
     N_("The virtual camera is still in use. Close apps using it and try again."),
     N_("v4l2loopback is not installed."),
     N_("v4l2loopback is already used by another app."),
     N_("The virtual camera did not appear."),
+    SECURE_BOOT_BLOCKED,
 )
+# Steps the window offers to open next to a helper message.
+HELPER_GUIDES = {
+    SECURE_BOOT_BLOCKED: "https://github.com/JannikHerter/beamcam/blob/main/docs/user/troubleshooting.md"
+    "#secure-boot-blocks-the-virtual-camera",
+}
 
 
 @dataclass(frozen=True)
@@ -118,8 +125,19 @@ def install_command() -> str | None:
         return "sudo pacman -S --needed v4l2loopback-dkms linux-headers"
     if ids & {"debian", "ubuntu", "linuxmint", "pop"}:
         return "sudo apt install v4l2loopback-dkms"
-    if ids & {"fedora"}:
-        return "sudo dnf install akmod-v4l2loopback  # needs RPM Fusion"
+    if "fedora" in ids:
+        # The driver is in RPM Fusion, built on the computer by akmods. Creating the signing key
+        # before the first build lets it load with Secure Boot once the key is enrolled.
+        install = "sudo dnf install akmods && sudo kmodgenca -a && sudo dnf install akmod-v4l2loopback"
+        if Path("/etc/yum.repos.d/rpmfusion-free.repo").exists():
+            return install
+        # Atomic desktops have no dnf install, and RHEL-likes have no %fedora for the RPM Fusion URL.
+        if release.get("ID") == "fedora" and not Path("/run/ostree-booted").exists():
+            return (
+                "sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm"
+                f" && {install}"
+            )
+        return None
     if ids & {"opensuse", "suse", "opensuse-tumbleweed"}:
         return "sudo zypper install v4l2loopback-kmp-default"
     return None

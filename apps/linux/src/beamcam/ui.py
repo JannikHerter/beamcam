@@ -204,7 +204,7 @@ class Window(Adw.ApplicationWindow):
             if ok:
                 self.toast(_("Virtual camera removed.") if remove else _("Virtual camera is ready."))
             elif error:
-                self._alert(_("Couldn’t Change the Virtual Camera"), _(error))
+                self._alert(_("Couldn’t Change the Virtual Camera"), _(error), virtualcam.HELPER_GUIDES.get(error))
 
         threading.Thread(target=work, daemon=True).start()
 
@@ -539,9 +539,18 @@ class Window(Adw.ApplicationWindow):
     def toast(self, text: str) -> None:
         self.toasts.add_toast(Adw.Toast(title=GLib.markup_escape_text(text), timeout=6))
 
-    def _alert(self, heading: str, body: str) -> None:
+    def _alert(self, heading: str, body: str, guide: str | None = None) -> None:
         dialog = Adw.AlertDialog(heading=heading, body=body)
         dialog.add_response("ok", _("OK"))
+        if guide:
+            dialog.add_response("guide", _("Open Guide"))
+            dialog.set_default_response("guide")
+
+            def on_response(_dialog: Adw.AlertDialog, response: str) -> None:
+                if response == "guide":
+                    Gtk.UriLauncher(uri=guide).launch(self, None, None)
+
+            dialog.connect("response", on_response)
         dialog.present(self)
 
     def _show_about(self) -> None:

@@ -1,0 +1,6 @@
+The first public version.
+• Use your phone as a webcam on Linux and Windows 11, over your Wi-Fi.
+• Click Connect on the computer and tap Allow on the phone. After that, opening both apps is enough.
+• Front and back camera. Turn the phone sideways for a wide picture.
+• Private: the video stays on your Wi-Fi and is encrypted. No account, no cloud.
+• English and German.
