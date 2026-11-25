@@ -6,7 +6,7 @@ pkgrel=1
 pkgdesc='Use your Android phone as a wireless webcam'
 arch=('any')
 url='https://github.com/JannikHerter/open-webcam'
-license=('LicenseRef-unknown')
+license=('GPL-3.0-or-later')
 depends=(
   'python' 'python-gobject' 'python-cryptography' 'gtk4' 'libadwaita' 'polkit'
   'gstreamer' 'gst-plugins-base' 'gst-plugins-good' 'gst-plugins-bad' 'gst-libav' 'gst-plugin-gtk4'

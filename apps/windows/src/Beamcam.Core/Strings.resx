@@ -68,6 +68,7 @@
   <data name="PhoneForgotten" xml:space="preserve"><value>“{0}” forgotten.</value></data>
   <data name="PhonesForgotten" xml:space="preserve"><value>Paired phones forgotten.</value></data>
   <data name="Tagline" xml:space="preserve"><value>Use your Android phone as a webcam.</value></data>
+  <data name="License" xml:space="preserve"><value>Free software under the GNU GPL, version 3 or later. It comes with no warranty.</value></data>
   <data name="Language" xml:space="preserve"><value>Language</value></data>
   <data name="LanguageRestart" xml:space="preserve"><value>Beamcam restarts to switch the language. A running stream stops.</value></data>
   <data name="SameAsComputer" xml:space="preserve"><value>Same as this computer ({0})</value></data>

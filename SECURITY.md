@@ -49,4 +49,4 @@
 
 ## Reporting
 
-Please report vulnerabilities privately to the maintainers instead of opening a public issue.
+Please report vulnerabilities privately to linuxisbetter@tutamail.com instead of opening a public issue.

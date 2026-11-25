@@ -335,7 +335,7 @@ public partial class MainWindow : Window, IControllerEvents
     }
 
     void OnAbout(object sender, RoutedEventArgs e) =>
-        MessageBox.Show(this, $"Beamcam {typeof(App).Assembly.GetName().Version?.ToString(3)}\n\n{Text.Get("Tagline")}", Text.Get("AboutBeamcam"));
+        MessageBox.Show(this, $"Beamcam {typeof(App).Assembly.GetName().Version?.ToString(3)}\n\n{Text.Get("Tagline")}\n\n© 2026 Beamcam contributors\n{Text.Get("License")}", Text.Get("AboutBeamcam"));
 
     protected override void OnClosing(CancelEventArgs e)
     {

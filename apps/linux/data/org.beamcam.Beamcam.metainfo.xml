@@ -4,6 +4,7 @@
   <name>Beamcam</name>
   <summary>Use your Android phone as a webcam</summary>
   <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
   <developer id="org.beamcam">
     <name>Beamcam developers</name>
   </developer>

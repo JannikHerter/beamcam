@@ -9,6 +9,7 @@
     <Version>0.1.0</Version>
     <Authors>Beamcam</Authors>
     <Product>Beamcam</Product>
+    <Copyright>© 2026 Beamcam contributors</Copyright>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <SatelliteResourceLanguages>en;de</SatelliteResourceLanguages>
   </PropertyGroup>

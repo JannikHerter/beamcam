@@ -12,6 +12,7 @@ AppName=Beamcam
 AppVersion={#AppVersion}
 AppVerName=Beamcam {#AppVersion}
 AppPublisher=Beamcam
+AppCopyright=© 2026 Beamcam contributors
 DefaultDirName={autopf}\Beamcam
 DisableDirPage=yes
 DisableProgramGroupPage=yes
@@ -68,6 +69,7 @@ de.NeedsWindows11=Beamcam braucht Windows 11. Auf diesem Computer läuft ein äl
 [Files]
 Source: "..\out\app\*"; Excludes: "BeamcamCamera.dll,*.pdb"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Source: "..\out\app\BeamcamCamera.dll"; DestDir: "{app}"; Flags: ignoreversion regserver
+Source: "..\..\..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\Beamcam"; Filename: "{app}\Beamcam.exe"

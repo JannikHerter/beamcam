@@ -550,6 +550,9 @@ class Window(Adw.ApplicationWindow):
             application_icon=APP_ID,
             version=__version__,
             comments=_("Use your Android phone as a webcam."),
+            copyright="© 2026 Beamcam contributors",
+            license_type=Gtk.License.GPL_3_0,
+            website="https://github.com/JannikHerter/open-webcam",
         ).present(self)
 
     def _on_close(self, _window) -> bool:

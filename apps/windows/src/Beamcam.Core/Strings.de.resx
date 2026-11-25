@@ -68,6 +68,7 @@
   <data name="PhoneForgotten" xml:space="preserve"><value>„{0}“ vergessen.</value></data>
   <data name="PhonesForgotten" xml:space="preserve"><value>Gekoppelte Handys vergessen.</value></data>
   <data name="Tagline" xml:space="preserve"><value>Nutze dein Android-Handy als Webcam.</value></data>
+  <data name="License" xml:space="preserve"><value>Freie Software unter der GNU GPL, Version 3 oder neuer. Ohne jede Gewährleistung.</value></data>
   <data name="Language" xml:space="preserve"><value>Sprache</value></data>
   <data name="LanguageRestart" xml:space="preserve"><value>Beamcam startet neu, um die Sprache zu wechseln. Eine laufende Übertragung wird beendet.</value></data>
   <data name="SameAsComputer" xml:space="preserve"><value>Wie dieser Computer ({0})</value></data>

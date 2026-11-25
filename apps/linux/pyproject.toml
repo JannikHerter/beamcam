@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,6 +7,7 @@ name = "beamcam"
 version = "0.1.0"
 description = "Use your Android phone as a webcam on Linux"
 readme = "README.md"
+license = "GPL-3.0-or-later"
 requires-python = ">=3.10"
 # PyGObject, GTK 4, libadwaita and GStreamer come from the distribution, not PyPI.
 dependencies = ["cryptography>=41"]

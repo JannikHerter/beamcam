@@ -27,3 +27,7 @@ Early development (0.1). Not released yet: build the packages and the Windows in
 - `apps/windows`: the computer app for Windows 11 (C# and WPF, a C++ virtual camera for Media Foundation)
 - `docs/`: user guides, internals and runbooks
 - `scripts/`: end-to-end test against an Android emulator
+
+## License
+
+Beamcam is free software under the [GNU General Public License, version 3 or later](LICENSE).
