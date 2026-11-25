@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: beamcam
 Upstream-Contact: linuxisbetter@tutamail.com
-Source: https://github.com/JannikHerter/open-webcam
+Source: https://github.com/JannikHerter/beamcam
 
 Files: *
 Copyright: 2026 Beamcam contributors

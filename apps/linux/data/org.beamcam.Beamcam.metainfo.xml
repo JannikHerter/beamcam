@@ -8,7 +8,7 @@
   <developer id="org.beamcam">
     <name>Beamcam developers</name>
   </developer>
-  <url type="homepage">https://github.com/JannikHerter/open-webcam</url>
+  <url type="homepage">https://github.com/JannikHerter/beamcam</url>
   <description>
     <p>Turn your Android phone into a wireless webcam for video calls, your browser and any other app that uses a camera.
     Open the app on your phone and on your computer, click Connect, and pick the “Beamcam” camera.</p>

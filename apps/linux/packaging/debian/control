@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Beamcam developers <linuxisbetter@tutamail.com>
 Build-Depends: debhelper-compat (= 13), dh-python, pybuild-plugin-pyproject, python3-all, python3-setuptools
 Standards-Version: 4.7.0
-Homepage: https://github.com/JannikHerter/open-webcam
+Homepage: https://github.com/JannikHerter/beamcam
 Rules-Requires-Root: no
 
 Package: beamcam
