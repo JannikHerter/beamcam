@@ -65,8 +65,11 @@ jobs:
         run: |
           tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
           apk=app/build/outputs/apk/release/app-release.apk
-          digest="$("$tools/apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"
-          [ "$digest" = "$RELEASE_CERT_SHA256" ] || { echo "::error::Signed with $digest, not the release key."; exit 1; }
+          echo "apksigner from $tools"
+          report="$("$tools/apksigner" verify --print-certs "$apk")"
+          echo "$report"
+          digests="$(echo "$report" | grep -o 'certificate SHA-256 digest: [0-9a-f]*' | sed 's/.*: //' | sort -u)"
+          [ "$digests" = "$RELEASE_CERT_SHA256" ] || { echo "::error::Signed with ${digests:-nothing}, not the release key."; exit 1; }
           mkdir -p "$RUNNER_TEMP/out" && cp "$apk" "$RUNNER_TEMP/out/Beamcam-$VERSION.apk"
       - uses: actions/upload-artifact@v7
         with:
