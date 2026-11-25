@@ -5,9 +5,23 @@
 - An Android phone (Android 9 or newer).
 - A Linux or Windows 11 computer on the **same Wi-Fi** as the phone. A hotspot from the phone works too.
 
+## Install
+
+Download the files from the [newest release](https://github.com/JannikHerter/beamcam/releases/latest).
+You need Beamcam on the phone and on the computer.
+
+- **Phone:** open the release page on your phone and download `Beamcam-….apk`. Open the download.
+  Android asks whether your browser may install apps: tap **Settings**, turn it on, go back and
+  tap **Install**. If Play Protect asks about the app, tap **More details**, then **Install anyway**.
+- **Windows 11:** download `Beamcam-Setup-….exe` and open it.
+- **Debian or Ubuntu:** download the `.deb` file and open it, or run
+  `sudo apt install ./beamcam_*.deb` in the folder you saved it to.
+- **Arch or Manjaro:** download the `.pkg.tar.zst` file and run `sudo pacman -U beamcam-*.pkg.tar.zst`
+  in the folder you saved it to.
+
 ## On the computer
 
-1. Install and open **Beamcam**.
+1. Open **Beamcam**.
 2. On Linux, the first time, a bar at the top says **Set up the virtual camera**. Click **Set Up**
    and enter your password. This creates the camera other apps will see. You only do this once.
    - If it says the driver isn't installed, click **How to Install** and run the command it shows,

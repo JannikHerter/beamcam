@@ -21,8 +21,25 @@ android {
         versionName = "0.1.0"
     }
 
+    // The release key comes from the environment (the release workflow, or a maintainer's shell).
+    // Without it a release build is signed with the debug key: good for testing, never published,
+    // because the release workflow checks the certificate.
+    val releaseKeystore = System.getenv("BEAMCAM_KEYSTORE")
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storeType = "PKCS12"
+                storePassword = System.getenv("BEAMCAM_KEYSTORE_PASSWORD")
+                keyAlias = "beamcam"
+                keyPassword = System.getenv("BEAMCAM_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))

@@ -4,7 +4,7 @@
 
 Use your Android phone as a wireless webcam on Linux or Windows 11, for video calls, your browser and any other app that uses a camera.
 
-1. Install **Beamcam** on your phone and on your computer.
+1. [Download](https://github.com/JannikHerter/beamcam/releases/latest) and install **Beamcam** on your phone and on your computer.
 2. Open both. Your phone shows up on the computer; click **Connect**.
 3. Tap **Allow** on the phone the first time.
 4. In your video call, browser or any other app, pick the camera **Beamcam**.
@@ -17,8 +17,9 @@ The video goes straight from your phone to your computer over your Wi-Fi. Nothin
 
 ## Status
 
-Early development (0.1). Not released yet: build the packages and the Windows installer yourself with the
-[development runbook](docs/operations/development.md#packages).
+Early development. [Download the newest release](https://github.com/JannikHerter/beamcam/releases/latest) for your
+phone and your computer; [Getting started](docs/user/getting-started.md#install) says which file you need.
+To build it yourself, see the [development runbook](docs/operations/development.md).
 
 ## Repository
 

@@ -180,3 +180,26 @@ same session. Screenshots come from the same trick or from QEMU's monitor.
 
 Remove the VM with `docker rm -f beamcam-win11 && docker volume rm beamcam-win11 && docker network rm
 beamcam-lan` (and `docker rmi dockurr/windows`).
+
+## Releases
+
+Pushing a tag `vX.Y.Z` runs `.github/workflows/release.yml`: it checks that every file says that
+version, runs CI, builds the signed phone app, both Linux packages and the Windows installer, and
+publishes them with `SHA256SUMS.txt` as a GitHub release. Versions starting with `0.` are marked
+pre-release.
+
+1. Set the new version everywhere `scripts/check-version.sh` looks, and raise `versionCode` in
+   `apps/android/app/build.gradle.kts` by one (Android refuses an update with the same code).
+   Add a section to `CHANGELOG.md` (it becomes the release notes), an entry on top of
+   `apps/linux/packaging/debian/changelog` and a `<release>` in the metainfo.
+2. `scripts/check-version.sh X.Y.Z`, then commit and push.
+3. `git tag vX.Y.Z && git push origin vX.Y.Z`, and watch the Release workflow.
+
+The phone app is signed with the release key. Phones only accept an update signed with the same
+key, so losing it means every user has to uninstall and set Beamcam up again. The maintainer keeps
+the key (`beamcam-release.p12`, alias `beamcam`) and its password backed up outside the repo; the
+workflow gets them from the repository secrets `BEAMCAM_KEYSTORE_BASE64` and
+`BEAMCAM_KEYSTORE_PASSWORD`, and refuses any certificate but the one pinned in the workflow.
+To sign a release build locally, set `BEAMCAM_KEYSTORE` to the key file and
+`BEAMCAM_KEYSTORE_PASSWORD`. Without them `assembleRelease` signs with the debug key, which is
+handy for testing the shrunk release build over a debug install.

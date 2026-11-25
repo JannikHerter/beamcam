@@ -1,4 +1,5 @@
 # The checks from AGENTS.md ("Verifying") on every push to main and every pull request.
+# release.yml calls it too, and publishes the Windows installer it builds.
 name: CI
 
 on:
@@ -6,6 +7,7 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
