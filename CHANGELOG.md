@@ -2,6 +2,14 @@
 
 What changed in each release, in plain words.
 
+## 0.2.0
+
+- **Fedora:** Beamcam now comes as an `.rpm` for Fedora. On Fedora, **How to Install** for the
+  virtual camera driver now gives one command that sets up everything the driver needs.
+- **Secure Boot:** if Secure Boot blocks the virtual camera driver, Beamcam now says so and
+  **Open Guide** shows how to allow it.
+- **Phone:** nothing changes for you. The app is now ready for F-Droid.
+
 ## 0.1.0
 
 The first public version. It works on the phones and computers we could test, but it is new: if

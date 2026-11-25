@@ -4,7 +4,7 @@
 ; It needs administrator rights once, because Windows only loads virtual camera sources that are
 ; registered for the whole computer (HKLM), from a folder the camera service can read.
 
-#define AppVersion "0.1.0"
+#define AppVersion "0.2.0"
 
 [Setup]
 AppId={{6B1A7C52-3E0B-4B8E-9F57-2A1C4E7D9B30}

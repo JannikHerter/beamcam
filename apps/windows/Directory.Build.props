@@ -6,7 +6,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- The vulnerability feed being unreachable must not fail the build. -->
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900</WarningsNotAsErrors>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Authors>Beamcam</Authors>
     <Product>Beamcam</Product>
     <Copyright>© 2026 Beamcam contributors</Copyright>

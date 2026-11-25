@@ -17,8 +17,8 @@ android {
         applicationId = "org.beamcam"
         minSdk = 28
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     // The release key comes from the environment (the release workflow, or a maintainer's shell).

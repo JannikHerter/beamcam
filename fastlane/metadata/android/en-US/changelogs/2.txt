@@ -1,0 +1,1 @@
+No visible changes on the phone. On the computer, Beamcam now comes for Fedora too and helps you when Secure Boot blocks the virtual camera driver.

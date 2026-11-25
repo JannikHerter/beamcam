@@ -2,7 +2,7 @@
 # lives in /usr/share/beamcam instead of the versioned site-packages, so it does not depend on
 # one Python version (Fedora 43 and 44 have 3.14, Fedora 45 has 3.15).
 Name:           beamcam
-Version:        0.1.0
+Version:        0.2.0
 Release:        1
 Summary:        Use your Android phone as a wireless webcam
 License:        GPL-3.0-or-later
@@ -63,5 +63,8 @@ sh packaging/install-data.sh %{buildroot}
 %{_datadir}/polkit-1/actions/org.beamcam.Beamcam.policy
 
 %changelog
+* Wed Nov 25 2026 Beamcam developers <linuxisbetter@tutamail.com> - 0.2.0-1
+- First Fedora package. Helps when Secure Boot blocks the virtual camera driver.
+
 * Wed Nov 25 2026 Beamcam developers <linuxisbetter@tutamail.com> - 0.1.0-1
 - The first public version.

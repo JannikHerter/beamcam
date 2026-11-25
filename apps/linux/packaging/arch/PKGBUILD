@@ -1,7 +1,7 @@
 # The AUR package "beamcam". It downloads the release; packaging/build-arch.sh builds this
 # checkout with it instead, and arch/update-aur.sh fills in the checksum for the AUR.
 pkgname=beamcam
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc='Use your Android phone as a wireless webcam'
 arch=('any')

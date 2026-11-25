@@ -1,3 +1,9 @@
+beamcam (0.2.0-1) unstable; urgency=medium
+
+  * Helps when Secure Boot blocks the virtual camera driver.
+
+ -- Beamcam developers <linuxisbetter@tutamail.com>  Wed, 25 Nov 2026 17:00:00 +0100
+
 beamcam (0.1.0-1) unstable; urgency=medium
 
   * First public release.

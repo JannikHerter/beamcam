@@ -1,0 +1,1 @@
+Keine sichtbaren Änderungen auf dem Handy. Auf dem Computer gibt es Beamcam jetzt auch für Fedora, und es hilft dir, wenn Secure Boot den Treiber der virtuellen Kamera blockiert.
