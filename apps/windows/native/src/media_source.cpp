@@ -258,9 +258,9 @@ public:
         auto queue = Queue();
         return queue ? queue->GetEvent(flags, event) : MF_E_SHUTDOWN;
     }
-    STDMETHODIMP QueueEvent(MediaEventType type, REFGUID extended, HRESULT status, const PROPVARIANT* value) override {
+    STDMETHODIMP QueueEvent(MediaEventType type, REFGUID extended, HRESULT status, const PROPVARIANT* event_value) override {
         auto queue = Queue();
-        return queue ? queue->QueueEventParamVar(type, extended, status, value) : MF_E_SHUTDOWN;
+        return queue ? queue->QueueEventParamVar(type, extended, status, event_value) : MF_E_SHUTDOWN;
     }
 
     // IMFMediaStream
@@ -285,19 +285,19 @@ public:
     }
 
     // IMFMediaStream2
-    STDMETHODIMP SetStreamState(MF_STREAM_STATE value) override {
-        Trace("SetStreamState %d", value);
-        if (value == MF_STREAM_STATE_STOPPED) return state() == MF_STREAM_STATE_STOPPED ? S_OK : Stop();
+    STDMETHODIMP SetStreamState(MF_STREAM_STATE wanted) override {
+        Trace("SetStreamState %d", wanted);
+        if (wanted == MF_STREAM_STATE_STOPPED) return state() == MF_STREAM_STATE_STOPPED ? S_OK : Stop();
         {
             std::lock_guard guard(lock_);
-            state_ = value;
+            state_ = wanted;
         }
-        if (value == MF_STREAM_STATE_RUNNING) StartWorker();
+        if (wanted == MF_STREAM_STATE_RUNNING) StartWorker();
         return S_OK;
     }
-    STDMETHODIMP GetStreamState(MF_STREAM_STATE* value) override {
-        if (!value) return E_POINTER;
-        *value = state();
+    STDMETHODIMP GetStreamState(MF_STREAM_STATE* current) override {
+        if (!current) return E_POINTER;
+        *current = state();
         return S_OK;
     }
 
@@ -496,9 +496,9 @@ public:
         auto queue = Queue();
         return queue ? queue->GetEvent(flags, event) : MF_E_SHUTDOWN;
     }
-    STDMETHODIMP QueueEvent(MediaEventType type, REFGUID extended, HRESULT status, const PROPVARIANT* value) override {
+    STDMETHODIMP QueueEvent(MediaEventType type, REFGUID extended, HRESULT status, const PROPVARIANT* event_value) override {
         auto queue = Queue();
-        return queue ? queue->QueueEventParamVar(type, extended, status, value) : MF_E_SHUTDOWN;
+        return queue ? queue->QueueEventParamVar(type, extended, status, event_value) : MF_E_SHUTDOWN;
     }
 
     // IMFMediaSource
