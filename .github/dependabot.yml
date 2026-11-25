@@ -1,0 +1,27 @@
+# Monthly, one grouped pull request per ecosystem, so updates stay few and CI checks each of them.
+# Linux needs nothing here: its dependencies come from the distribution.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /apps/android
+    schedule:
+      interval: monthly
+    groups:
+      android:
+        patterns: ["*"]
+
+  - package-ecosystem: nuget
+    directory: /apps/windows
+    schedule:
+      interval: monthly
+    groups:
+      windows:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
