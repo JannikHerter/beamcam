@@ -42,8 +42,14 @@ jobs:
           path: apps/android/app/build/outputs/apk/debug/app-debug.apk
 
   linux:
-    name: Linux (unit tests)
-    runs-on: ubuntu-24.04
+    name: Linux (unit tests, ${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x64, runner: ubuntu-24.04 }
+          - { arch: arm64, runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.runner }}
     defaults:
       run:
         working-directory: apps/linux
@@ -58,6 +64,27 @@ jobs:
             gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
             gstreamer1.0-plugins-ugly gstreamer1.0-libav
       - run: PYTHONPATH=src /usr/bin/python3 -m unittest discover -s tests -t . -v
+
+  linux-packages:
+    name: Linux packages (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x64, runner: ubuntu-24.04 }
+          - { arch: arm64, runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+      - run: apps/linux/packaging/build-deb.sh debian:13 "$RUNNER_TEMP/out"
+      - run: apps/linux/packaging/check-install.sh "$RUNNER_TEMP/out"/beamcam_*.deb debian:13
+      - run: apps/linux/packaging/build-rpm.sh fedora:45 "$RUNNER_TEMP/out"
+      - run: apps/linux/packaging/check-install.sh "$RUNNER_TEMP/out"/beamcam-*.rpm fedora:45
+      # The archlinux image exists for x64 only.
+      - if: matrix.arch == 'x64'
+        run: apps/linux/packaging/build-arch.sh archlinux:latest "$RUNNER_TEMP/out"
+      - if: matrix.arch == 'x64'
+        run: apps/linux/packaging/check-install.sh "$RUNNER_TEMP/out"/beamcam-*.pkg.tar.* archlinux:latest
 
   windows-core:
     name: Windows core (C# tests, rotation tests)

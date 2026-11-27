@@ -45,13 +45,18 @@ apps/linux/packaging/build-deb.sh
 sudo apt install ./apps/linux/packaging/dist/beamcam_*.deb
 # Arch, Manjaro
 apps/linux/packaging/build-arch.sh
-sudo pacman -U apps/linux/packaging/dist/beamcam-*.pkg.tar.zst
+sudo pacman -U apps/linux/packaging/dist/beamcam-*.pkg.tar.*
 # Fedora
 apps/linux/packaging/build-rpm.sh
 sudo dnf install ./apps/linux/packaging/dist/beamcam-*.noarch.rpm
 ```
 
 Older releases such as Ubuntu 24.04 lack `gstreamer1.0-gtk4`, which the preview needs.
+
+`apps/linux/packaging/check-install.sh PACKAGE` installs a built package in a clean container,
+without recommended packages, and checks that the app starts and finds every GStreamer element
+it needs. CI runs it for the `.deb` and `.rpm` on x64 and arm64, and for the Arch package on x64
+(Arch Linux ARM has no official container image).
 
 - **Arch:** `arch/PKGBUILD` is also the AUR package. On its own it downloads the release tarball;
   `build-arch.sh` puts a tarball of the checkout next to it (`source-tarball.sh`), which makepkg

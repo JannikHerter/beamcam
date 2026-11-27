@@ -102,7 +102,9 @@ Before calling work done, say which of these applied:
 - Windows unit tests: `cd apps/windows && dotnet test tests/Beamcam.Core.Tests` (runs on Linux too, see
   [development](docs/operations/development.md#windows)) and `native/tests/convert_tests.cpp`.
 - CI (`.github/workflows/ci.yml`) runs all of the above on every push to main and every pull request; its
-  Windows job also builds the native DLL with MSVC and the installer.
+  Windows job also builds the native DLL with MSVC and the installer. The Linux tests run on x64 and arm64,
+  and the `.deb` and `.rpm` are built and installed in clean containers on both, the Arch package on x64
+  (`packaging/check-install.sh`).
 - Windows end to end needs a Windows 11 machine or VM on the same network as a phone; the runbook has the steps.
 - End to end on an emulator: `scripts/e2e-emulator.sh` (see [development](docs/operations/development.md#end-to-end-test)).
   It also exercises the virtual camera when a writable v4l2loopback device exists.

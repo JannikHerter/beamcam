@@ -16,7 +16,8 @@ docker run --rm -v "$work:/work:ro" -v "$out:/out" "$image" bash -euc '
     cp -r /work /home/builder/pkg && chown -R builder /home/builder/pkg && cd /home/builder/pkg
     # -s installs depends and makedepends from the PKGBUILD, which also checks that they exist.
     su builder -c "PKGDEST=/home/builder/out makepkg -s --noconfirm --noprogressbar"
-    namcap PKGBUILD /home/builder/out/*.pkg.tar.zst || true
-    cp /home/builder/out/*.pkg.tar.zst /out/ && chown "$(stat -c %u:%g /out)" /out/*.pkg.tar.zst
+    # Arch writes .pkg.tar.zst, Arch Linux ARM .pkg.tar.xz.
+    namcap PKGBUILD /home/builder/out/*.pkg.tar.* || true
+    cp /home/builder/out/*.pkg.tar.* /out/ && chown "$(stat -c %u:%g /out)" /out/*.pkg.tar.*
 '
-ls "$out"/*.pkg.tar.zst
+ls "$out"/*.pkg.tar.*
