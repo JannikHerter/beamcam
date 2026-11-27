@@ -110,12 +110,18 @@ int Stream()
     var config = Config.Load();
     Controller? controller = null;
     var cameraRequested = false;
+    string? currentFacing = null;
     var events = new Events(
         code => Console.WriteLine($"Waiting for you to tap Allow on the phone. It shows the code {code}."),
         info => Console.WriteLine($"Streaming from {info.DeviceName} ({info.Width}x{info.Height}) to {(camera is null ? "nowhere" : "the Beamcam camera")}"),
         current =>
         {
-            // The phone ignores SET_CAMERA until its camera runs, which its first CAMERA message announces.
+            if (current != currentFacing)
+            {
+                currentFacing = current;
+                Console.WriteLine($"Using the {current} camera");
+            }
+            // Phones up to 0.2.0 ignore SET_CAMERA until their camera runs, which the first CAMERA announces.
             if (facing is not null && current != facing && !cameraRequested)
             {
                 cameraRequested = true;

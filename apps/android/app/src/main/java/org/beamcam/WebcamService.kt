@@ -231,7 +231,10 @@ class WebcamService : Service() {
         @Volatile private var approval: CompletableDeferred<Boolean>? = null
         /** Set by [claim] for a computer that asks to pair, cleared when the user answered. */
         @Volatile var awaitingApproval = false
-        @Volatile private var streaming = false
+        /** The computer is allowed; it may change the camera from here on. */
+        @Volatile private var accepted = false
+        /** Starting and switching the camera happen on different threads; neither may miss the other. */
+        private val cameraLock = Any()
         @Volatile private var codecConfig: ByteArray? = null
         @Volatile private var waitingForKeyframe = false
         @Volatile private var quadrant = 0
@@ -330,6 +333,7 @@ class WebcamService : Service() {
                 if (offer != null) {
                     accept.put("udpPort", offer.socket.localPort).put("udpKey", offer.key.toHex())
                 }
+                accepted = true
                 output.writeJson(Protocol.ACCEPT, accept)
                 output.flush()
                 if (offer != null) {
@@ -344,12 +348,11 @@ class WebcamService : Service() {
                         Log.i(TAG, "no UDP from the computer, streaming video over TCP")
                     }
                 }
-                streaming = true
                 WebcamState.update { it.copy(status = WebcamStatus.Streaming(clientName, identity!!)) }
                 notifyStatus(clientName)
                 acquireLocks()
                 launch(Dispatchers.Main) { startOrientationListener() }
-                startCamera(settings.facing)
+                startCamera()
 
                 for (message in outgoing) {
                     write(output, message)
@@ -408,7 +411,7 @@ class WebcamService : Service() {
             try {
                 while (true) {
                     val message = input.readMessage()
-                    if (message.type == Protocol.SET_CAMERA && streaming) {
+                    if (message.type == Protocol.SET_CAMERA && accepted) {
                         val facing = Facing.fromWire(message.json().optString("facing"))
                         settings.facing = facing
                         WebcamState.update { it.copy(facing = facing) }
@@ -422,7 +425,7 @@ class WebcamService : Service() {
             }
         }
 
-        private fun startCamera(facing: Facing) {
+        private fun startCamera() = synchronized(cameraLock) {
             streamer = CameraStreamer(
                 this@WebcamService,
                 FORMAT,
@@ -432,10 +435,11 @@ class WebcamService : Service() {
                     WebcamState.update { it.copy(message = text(R.string.error_camera, error)) }
                     close(Protocol.EndReason.CAMERA)
                 },
-            ).also { it.start(facing) { sendOrientation(force = true) } }
+            ).also { it.start(settings.facing) { sendOrientation(force = true) } }
         }
 
-        fun switchCamera(facing: Facing) {
+        /** Call after storing [facing] in settings: a camera that has not started yet opens from there. */
+        fun switchCamera(facing: Facing) = synchronized(cameraLock) {
             streamer?.switchCamera(facing) { sendOrientation(force = true) }
         }
 

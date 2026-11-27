@@ -64,6 +64,9 @@ END reasons: `denied`, `timeout` (nobody answered), `busy`, `stopped` (user stop
    Unknown secret: `END unknown`.
 3. Phone sends ACCEPT, opens the camera, sends CAMERA, then VIDEO continuously.
 4. CAMERA is sent again whenever the rotation or camera changes.
+   The computer may send SET_CAMERA any time after ACCEPT; the phone ignores it before. Phones up
+   to 0.2.0 also ignored it until the first CAMERA, so a computer that picks a camera at the start
+   waits for that.
 5. Either side closes the socket to end. The computer treats 8 s without video as a lost connection.
 
 ## UDP video

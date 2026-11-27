@@ -94,7 +94,7 @@ def _stream(args: argparse.Namespace) -> int:
 
     config = Config.load()
     loop = GLib.MainLoop()
-    result = {"exit": 0, "snapshot_taken": False}
+    result = {"exit": 0, "snapshot_taken": False, "facing": None, "camera_requested": False}
 
     class Events:
         def on_pending(self, code: str) -> None:
@@ -102,11 +102,15 @@ def _stream(args: argparse.Namespace) -> int:
 
         def on_streaming(self, info, pipeline) -> None:
             print(f"Streaming from {info.device_name} ({info.width}x{info.height}) to {device or 'nowhere'}", flush=True)
-            if args.camera:
-                controller.set_camera(args.camera)
 
         def on_camera(self, facing: str) -> None:
-            pass
+            if facing != result["facing"]:
+                result["facing"] = facing
+                print(f"Using the {facing} camera", flush=True)
+            # Phones up to 0.2.0 ignore SET_CAMERA until their camera runs, which the first CAMERA announces.
+            if args.camera and facing != args.camera and not result["camera_requested"]:
+                result["camera_requested"] = True
+                controller.set_camera(args.camera)
 
         def on_ended(self, reason: str) -> None:
             if reason != "closed":

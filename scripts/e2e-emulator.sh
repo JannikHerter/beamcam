@@ -5,6 +5,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${E2E_OUT:-$(mktemp -d)}"
+PORT="${E2E_PORT:-47800}"
+mkdir -p "$OUT"
 BUILD=1
 LAUNCH=0
 for arg in "$@"; do
@@ -34,7 +36,7 @@ else
 fi
 
 # The emulator is behind NAT; reach its server through adb.
-adb forward tcp:47800 tcp:47800 >/dev/null
+adb forward "tcp:$PORT" tcp:47800 >/dev/null
 
 step "Waiting for the phone to listen"
 for _ in $(seq 60); do
@@ -49,20 +51,24 @@ export XDG_CONFIG_HOME="${E2E_CONFIG:-$OUT/config}"
 cd "$OUT"
 
 step "Decoding 150 frames (tap Allow on the emulator if it asks)"
-python3 -m beamcam stream 127.0.0.1:47800 --no-camera --frames 150 --snapshot "$OUT/decoded.png" \
-  || fail "streaming did not work"
+python3 -m beamcam stream "127.0.0.1:$PORT" --no-camera --frames 150 --camera front --snapshot "$OUT/decoded.png" \
+  | tee "$OUT/decoded.log" || fail "streaming did not work"
+grep -q "Using the front camera" "$OUT/decoded.log" || fail "the phone did not switch to the front camera"
 
 step "Switching to the back camera"
-python3 -m beamcam stream 127.0.0.1:47800 --no-camera --frames 90 --camera back --snapshot "$OUT/back.png" \
-  || fail "camera switch did not work"
-python3 -m beamcam stream 127.0.0.1:47800 --no-camera --frames 30 --camera front >/dev/null
+python3 -m beamcam stream "127.0.0.1:$PORT" --no-camera --frames 90 --camera back --snapshot "$OUT/back.png" \
+  | tee "$OUT/back.log" || fail "streaming from the back camera did not work"
+grep -q "Using the back camera" "$OUT/back.log" || fail "the phone did not switch to the back camera"
+python3 -m beamcam stream "127.0.0.1:$PORT" --no-camera --frames 30 --camera front > "$OUT/front.log" \
+  || fail "streaming from the front camera did not work"
+grep -q "Using the front camera" "$OUT/front.log" || fail "the phone did not switch back to the front camera"
 
 DEVICE="$(python3 -c 'from beamcam import virtualcam as v; c = v.find_camera(); print(c.path if c and c.writable else "")')"
 if [ -z "$DEVICE" ]; then
   step "Skipping the virtual camera check (no writable v4l2loopback device)"
 else
   step "Writing to $DEVICE and reading it back like a video app"
-  python3 -m beamcam stream 127.0.0.1:47800 --device "$DEVICE" --frames 450 > "$OUT/producer.log" 2>&1 &
+  python3 -m beamcam stream "127.0.0.1:$PORT" --device "$DEVICE" --frames 450 > "$OUT/producer.log" 2>&1 &
   producer=$!
   for _ in $(seq 40); do grep -q "Streaming from" "$OUT/producer.log" && break; sleep 0.5; done
   grep -q "Streaming from" "$OUT/producer.log" || { cat "$OUT/producer.log"; fail "producer did not start"; }

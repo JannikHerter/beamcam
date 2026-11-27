@@ -110,7 +110,7 @@ open it yourself after the install step. The first run needs a tap on **Allow** 
 
 adb forwards only TCP, so on the emulator video always takes the TCP fallback ("Video transport:
 tcp"); the UDP path needs a real phone on the same network. With several devices attached, set
-`ANDROID_SERIAL=emulator-5554`.
+`ANDROID_SERIAL=emulator-5554`. If local port 47800 is taken (another emulator's forward), pick another with `E2E_PORT=47810`.
 
 What it cannot cover: discovery over a real Wi-Fi network, a real phone's encoder, UDP video, and
 the `pkexec` prompt. Check those by hand before a release.
