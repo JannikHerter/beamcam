@@ -21,6 +21,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Beamcam">
 
+        <!-- Large screens otherwise fake a portrait sensor and crop every frame; we rotate on the computer. -->
+        <property
+            android:name="android.camera.PROPERTY_COMPAT_OVERRIDE_LANDSCAPE_TO_PORTRAIT"
+            android:value="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
