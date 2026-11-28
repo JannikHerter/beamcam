@@ -35,6 +35,7 @@ class Config:
     last_phone_id: str | None = None
     last_address: str | None = None
     language: str | None = None  # None: the computer's language
+    check_updates: bool | None = None  # the answer to "Look for new versions?", None: not asked yet
     # Phones this computer paired with, by certificate fingerprint (hex):
     # {"secret": hex, "phone_id": str, "name": str, "last_connected": unix seconds}.
     # The secret is what the phone allowed.

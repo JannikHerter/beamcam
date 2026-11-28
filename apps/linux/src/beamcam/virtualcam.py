@@ -85,17 +85,25 @@ def helper_command() -> list[str]:
 
 def run_helper(remove: bool = False) -> tuple[bool, str]:
     """Create (or remove) the virtual camera as root via pkexec. Returns (ok, error text)."""
+    return run_as_root([*helper_command(), *(["--remove"] if remove else [])])
+
+
+NOT_ALLOWED = N_("Your computer didn’t let Beamcam make this change. Try again, and enter your password when asked.")
+
+
+def run_as_root(command: list[str]) -> tuple[bool, str]:
+    """Runs a helper through pkexec. Returns (ok, error text); no text if the user cancelled."""
     if shutil.which("pkexec") is None:
         return False, "pkexec is not installed"
-    command = ["pkexec", *helper_command()]
-    if remove:
-        command.append("--remove")
+    command = ["pkexec", *command]
     try:
         result = subprocess.run(command, capture_output=True, text=True, timeout=120)
     except (OSError, subprocess.TimeoutExpired) as error:
         return False, str(error)
-    if result.returncode in (126, 127):  # pkexec: dismissed / not authorized
+    if result.returncode == 126:  # pkexec: the user dismissed the password prompt
         return False, ""
+    if result.returncode == 127:  # pkexec: not authorized, e.g. a wrong password or no prompt at all
+        return False, NOT_ALLOWED
     if result.returncode != 0:
         return False, (result.stderr or result.stdout).strip()
     return True, ""

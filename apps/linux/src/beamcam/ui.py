@@ -14,7 +14,7 @@ gi.require_version("Adw", "1")
 gi.require_version("Gst", "1.0")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
-from beamcam import APP_ID, __version__, i18n, virtualcam  # noqa: E402
+from beamcam import APP_ID, __version__, i18n, updates, virtualcam  # noqa: E402
 from beamcam.client import CLOSED, UNKNOWN_PHONE, StreamInfo, end_message, parse_address  # noqa: E402
 from beamcam.config import Config, PairedPhone, computer_name  # noqa: E402
 from beamcam.controller import Controller  # noqa: E402
@@ -50,6 +50,8 @@ class Window(Adw.ApplicationWindow):
         self.toasts = Adw.ToastOverlay()
         self.banner = Adw.Banner(revealed=False)
         self.banner.connect("button-clicked", self._on_banner_button)
+        self.updates_action: Gio.SimpleAction | None = None
+        self.update_bar = self._build_update_bar()
         self.stack = Adw.ViewStack(vexpand=True)
         self.stack.add_named(self._build_phones_page(), "phones")
         self.stack.add_named(self._build_connecting_page(), "connecting")
@@ -57,6 +59,7 @@ class Window(Adw.ApplicationWindow):
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         content.append(self.banner)
+        content.append(self.update_bar)
         content.append(self.stack)
         self.toasts.set_child(content)
 
@@ -65,9 +68,18 @@ class Window(Adw.ApplicationWindow):
         menu.append(_("Connect by Address…"), "win.connect-address")
         menu.append(_("Paired Phones"), "win.paired-phones")
         menu.append(_("Remove Virtual Camera…"), "win.remove-camera")
+        if updates.available():
+            menu.append(_("Look for New Versions"), "win.check-updates")
+            self.updates_action = Gio.SimpleAction.new_stateful("check-updates", None, GLib.Variant.new_boolean(False))
+            # The opposite of the check mark the user saw, which _render_updates refreshes on opening.
+            self.updates_action.connect("activate", lambda action, _p: self._turn_updates(not action.get_state().unpack()))
+            self.add_action(self.updates_action)
         menu.append(_("Language…"), "win.language")
         menu.append(_("About Beamcam"), "win.about")
-        header.pack_end(Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu, tooltip_text=_("Main Menu")))
+        menu_button = Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu, tooltip_text=_("Main Menu"))
+        # The software settings may have turned the repository off meanwhile.
+        menu_button.connect("notify::active", lambda button, _p: button.get_active() and self._render_updates())
+        header.pack_end(menu_button)
         view = Adw.ToolbarView()
         view.add_top_bar(header)
         view.set_content(self.toasts)
@@ -86,6 +98,7 @@ class Window(Adw.ApplicationWindow):
 
         self.connect("close-request", self._on_close)
         self.refresh_camera_state()
+        self._render_updates()
         self._render_phones()
         self.browser = Browser(lambda phones: GLib.idle_add(self._on_phones, phones))
         self.browser.start()
@@ -205,6 +218,71 @@ class Window(Adw.ApplicationWindow):
                 self.toast(_("Virtual camera removed.") if remove else _("Virtual camera is ready."))
             elif error:
                 self._alert(_("Couldn’t Change the Virtual Camera"), _(error), virtualcam.HELPER_GUIDES.get(error))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    # Updates
+
+    def _build_update_bar(self) -> Gtk.Widget:
+        label = Gtk.Label(
+            label=_(
+                "Look for new versions of Beamcam? Your computer then also asks Beamcam’s download page for "
+                "them when it looks for its other updates."
+            ),
+            wrap=True,
+            xalign=0,
+            hexpand=True,
+        )
+        no = Gtk.Button(label=_("No"), valign=Gtk.Align.CENTER)
+        no.connect("clicked", lambda _b: self._answer_updates(False))
+        yes = Gtk.Button(label=_("Yes"), valign=Gtk.Align.CENTER, css_classes=["suggested-action"])
+        yes.connect("clicked", lambda _b: self._answer_updates(True))
+        box = Gtk.Box(spacing=12, css_classes=["update-bar"])
+        box.append(label)
+        box.append(no)
+        box.append(yes)
+        css = Gtk.CssProvider()
+        css.load_from_string(".update-bar { background: alpha(@accent_bg_color, 0.15); padding: 8px 12px; }")
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        return Gtk.Revealer(child=box, reveal_child=False)
+
+    def _render_updates(self) -> None:
+        on = updates.turned_on()
+        self.update_bar.set_reveal_child(updates.should_ask(updates.available(), on, self.config.check_updates))
+        if self.updates_action is not None:
+            self.updates_action.set_state(GLib.Variant.new_boolean(on))
+
+    def _answer_updates(self, yes: bool) -> None:
+        if yes:
+            self._turn_updates(True)
+            return
+        self.config.check_updates = False
+        self.config.save()
+        self._render_updates()
+
+    def _turn_updates(self, on: bool) -> None:
+        self.update_bar.set_sensitive(False)
+        if self.updates_action is not None:
+            self.updates_action.set_enabled(False)
+
+        def work() -> None:
+            ok, error = updates.turn(on)
+            GLib.idle_add(done, ok, error)
+
+        def done(ok: bool, error: str) -> None:
+            self.update_bar.set_sensitive(True)
+            if self.updates_action is not None:
+                self.updates_action.set_enabled(True)
+            if ok:
+                self.config.check_updates = on
+                self.config.save()
+                self.toast(
+                    _("Done. New versions now come with your updates.") if on
+                    else _("Beamcam no longer looks for new versions.")
+                )
+            elif error:
+                self._alert(_("Couldn’t Turn On Updates") if on else _("Couldn’t Turn Off Updates"), _(error))
+            self._render_updates()
 
         threading.Thread(target=work, daemon=True).start()
 

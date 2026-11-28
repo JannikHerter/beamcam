@@ -86,6 +86,26 @@ jobs:
       - if: matrix.arch == 'x64'
         run: apps/linux/packaging/check-install.sh "$RUNNER_TEMP/out"/beamcam-*.pkg.tar.* archlinux:latest
 
+  linux-repos:
+    name: Linux repositories
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      # A throwaway key stands in for the repository key, which only the release may use.
+      - name: Make a test key
+        run: |
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          mkdir -m 700 "$GNUPGHOME"
+          gpg --batch --pinentry-mode loopback --passphrase '' --quick-gen-key "Beamcam CI test" rsa3072 sign 1d
+          gpg --armor --export > apps/linux/packaging/beamcam.asc
+          gpg --armor --export-secret-keys > "$RUNNER_TEMP/test-key.asc"
+      - run: apps/linux/packaging/build-deb.sh debian:13 "$RUNNER_TEMP/out"
+      - run: apps/linux/packaging/build-rpm.sh fedora:45 "$RUNNER_TEMP/out"
+      - run: |
+          BEAMCAM_REPO_KEY="$RUNNER_TEMP/test-key.asc" apps/linux/packaging/build-repos.sh \
+            "$RUNNER_TEMP"/out/*.deb "$RUNNER_TEMP"/out/*.rpm "$RUNNER_TEMP/site"
+      - run: apps/linux/packaging/check-repos.sh "$RUNNER_TEMP/site" "$RUNNER_TEMP"/out/*.deb "$RUNNER_TEMP"/out/*.rpm
+
   windows-core:
     name: Windows core (C# tests, rotation tests)
     runs-on: ubuntu-24.04

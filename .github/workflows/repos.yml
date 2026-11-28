@@ -1,0 +1,125 @@
+# After a release, publishes its .deb and .rpm as apt and dnf repositories on GitHub Pages, signed
+# with the repository key (docs/internals/updates.md#linux). Run it by hand to publish a release
+# again, as long as its Release run's files are kept (90 days). It runs from main, not from the
+# tag, because the github-pages and linux-repos environments only let the default branch use them.
+name: Linux repositories
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The release to publish, like v0.3.0"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and check the repositories
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    # Holds BEAMCAM_REPO_KEY, so only main can read it.
+    environment: linux-repos
+    permissions:
+      contents: read
+      actions: read # the Release run's files
+    outputs:
+      publish: ${{ steps.release.outputs.publish }}
+      tag: ${{ inputs.tag || github.event.workflow_run.head_branch }}
+    steps:
+      - uses: actions/checkout@v7
+      # First, so a run by hand finds a missing secret even while there is nothing to publish.
+      - name: The repository key is there
+        env:
+          BEAMCAM_REPO_KEY_ASC: ${{ secrets.BEAMCAM_REPO_KEY }}
+        run: '[ -n "$BEAMCAM_REPO_KEY_ASC" ] || { echo "::error::The secret BEAMCAM_REPO_KEY is missing."; exit 1; }'
+      - name: Get the release's packages
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.event.workflow_run.head_branch }}
+          RUN: ${{ github.event.workflow_run.id }}
+        run: |
+          # Only the newest stable release: never a pre-release, and never an older one, which
+          # would replace the newer packages on the site.
+          if ! latest="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>"$RUNNER_TEMP/error")"; then
+              grep -q "HTTP 404" "$RUNNER_TEMP/error" || { cat "$RUNNER_TEMP/error"; exit 1; }
+              latest="none" # only pre-releases so far
+          fi
+          if [ "$latest" != "$TAG" ]; then
+              echo "::notice::$TAG is not the latest release ($latest); nothing to publish."
+              echo "publish=false" >> "$GITHUB_OUTPUT"
+              exit 0
+          fi
+          # The files the Release run built and published, not the release's downloads, which
+          # anyone allowed to edit the release could replace.
+          if [ -z "$RUN" ]; then
+              RUN="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow release.yml --branch "$TAG" --event push \
+                  --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          fi
+          [ -n "$RUN" ] || { echo "::error::No successful Release run for $TAG."; exit 1; }
+          # A run of this repository's release.yml, started by pushing this very tag.
+          run="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN" \
+              --jq '[.event, .head_sha, .conclusion, .path] | join(" ")')"
+          commit="$(gh api "repos/$GITHUB_REPOSITORY/commits/$TAG" --jq .sha)"
+          [ "$run" = "push $commit success .github/workflows/release.yml" ] \
+              || { echo "::error::Run $RUN ($run) is not the Release run of $TAG ($commit)."; exit 1; }
+          gh run download "$RUN" --repo "$GITHUB_REPOSITORY" --name release-linux --dir "$RUNNER_TEMP/packages"
+          ls "$RUNNER_TEMP/packages"
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+      - name: Sign
+        if: steps.release.outputs.publish == 'true'
+        env:
+          BEAMCAM_REPO_KEY_ASC: ${{ secrets.BEAMCAM_REPO_KEY }}
+        run: |
+          export BEAMCAM_REPO_KEY="$RUNNER_TEMP/repo-key.asc"
+          (umask 077 && printf '%s\n' "$BEAMCAM_REPO_KEY_ASC" > "$BEAMCAM_REPO_KEY")
+          BEAMCAM_REPO_PREVIOUS=https://jannikherter.github.io/beamcam \
+            apps/linux/packaging/build-repos.sh "$RUNNER_TEMP"/packages/beamcam_*_all.deb \
+            "$RUNNER_TEMP"/packages/beamcam-*.noarch.rpm "$RUNNER_TEMP/site"
+          rm -f "$BEAMCAM_REPO_KEY"
+      - name: Update from the repositories in clean containers
+        if: steps.release.outputs.publish == 'true'
+        run: apps/linux/packaging/check-repos.sh "$RUNNER_TEMP/site" "$RUNNER_TEMP"/packages/beamcam_*_all.deb "$RUNNER_TEMP"/packages/beamcam-*.noarch.rpm
+      - uses: actions/upload-pages-artifact@v5
+        if: steps.release.outputs.publish == 'true'
+        with:
+          path: ${{ runner.temp }}/site
+
+  deploy:
+    name: Publish on GitHub Pages
+    needs: build
+    if: needs.build.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    # One deployment at a time; runs that publish nothing never wait here.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # A newer release may have been published while this one was being built and checked.
+      - name: Still the latest release
+        id: latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          latest="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)"
+          if [ "$latest" = "$TAG" ]; then
+              echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+              echo "::notice::$latest replaced $TAG as the latest release; not publishing $TAG."
+          fi
+      - id: deployment
+        if: steps.latest.outputs.publish == 'true'
+        uses: actions/deploy-pages@v5

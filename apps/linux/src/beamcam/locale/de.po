@@ -268,3 +268,36 @@ msgstr "v4l2loopback wird bereits von einer anderen App verwendet."
 
 msgid "The virtual camera did not appear."
 msgstr "Die virtuelle Kamera ist nicht erschienen."
+
+msgid "Look for New Versions"
+msgstr "Nach neuen Versionen suchen"
+
+msgid "Look for new versions of Beamcam? Your computer then also asks Beamcam’s download page for them when it looks for its other updates."
+msgstr "Nach neuen Versionen von Beamcam suchen? Dein Computer fragt dann auch auf der Download-Seite von Beamcam danach, wenn er nach seinen anderen Updates sucht."
+
+msgid "No"
+msgstr "Nein"
+
+msgid "Yes"
+msgstr "Ja"
+
+msgid "Done. New versions now come with your updates."
+msgstr "Fertig. Neue Versionen kommen jetzt mit deinen Updates."
+
+msgid "Beamcam no longer looks for new versions."
+msgstr "Beamcam sucht nicht mehr nach neuen Versionen."
+
+msgid "Couldn’t Turn On Updates"
+msgstr "Updates konnten nicht eingeschaltet werden"
+
+msgid "Couldn’t Turn Off Updates"
+msgstr "Updates konnten nicht ausgeschaltet werden"
+
+msgid "Your computer didn’t let Beamcam make this change. Try again, and enter your password when asked."
+msgstr "Dein Computer hat Beamcam diese Änderung nicht erlaubt. Versuche es noch einmal und gib dein Passwort ein, wenn du danach gefragt wirst."
+
+msgid "Your computer is installing other software. Try again when it has finished."
+msgstr "Dein Computer installiert gerade andere Software. Versuche es noch einmal, wenn er fertig ist."
+
+msgid "Beamcam’s download page can’t be reached. Check that this computer is online, then try again."
+msgstr "Die Download-Seite von Beamcam ist nicht erreichbar. Prüfe, ob dieser Computer online ist, und versuche es noch einmal."

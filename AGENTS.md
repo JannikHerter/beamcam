@@ -19,7 +19,7 @@ change adds a setting, a step or a term the user has to understand, find a way n
 The camera only turns on after the user allowed that computer on the phone, and the phone always
 shows that it is streaming. Video never leaves the local network. No accounts, no cloud, no analytics.
 The only thing the apps fetch from the internet is the update check, and only after the user said
-yes to it (see `docs/internals/updates.md`).
+yes to it; on Linux, yes adds Beamcam's package repository instead (see `docs/internals/updates.md`).
 
 ### 3. Works on ordinary networks and distros
 
@@ -60,12 +60,16 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
   - `pipeline.py`: GStreamer decode, rotate, fixed-size output, v4l2sink. `controller.py` joins session and pipeline.
   - `reconnect.py` decides whether and where to reconnect (follows the phone's id through mDNS).
   - `i18n.py` and `locale/*.po`: translations for the window.
+  - `updates.py` and `data/updates`: the opt-in question that adds Beamcam's apt or dnf repository
+    (only the `.deb` and `.rpm` have the helper).
   - `ui.py` (GTK) and `cli.py` (scripts and tests) are thin layers over the controller. Only the
     window reconnects; the CLI exits so scripts see the failure.
   - `virtualcam.py` and `data/setup-virtual-camera` find and create the v4l2loopback device.
   - `packaging/`: Debian, Arch (also the AUR package) and Fedora packages, each built in a container
     by its `build-*.sh`. `install-data.sh` installs the menu entry, icon, app info and helper for
-    all of them; a new file in `apps/linux/data` goes there too.
+    all of them; a new file in `apps/linux/data` goes there too. `build-repos.sh` and
+    `check-repos.sh` make and test the apt and dnf repositories that `.github/workflows/repos.yml`
+    publishes after a release.
 - `apps/windows/` (see its README for the picture):
   - `src/Beamcam.Core` (C#, any OS) ports the Linux core one to one: `Protocol.cs`, `Secure.cs`,
     `Session.cs`, `Reassembler.cs`, `Mdns.cs`, `Reconnector.cs`, `Config.cs`, `Controller.cs`.
@@ -78,7 +82,7 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
     Media Foundation; `convert.cpp` rotates and fits (unit tested, no Windows dependency).
   - `installer/Beamcam.iss`: Inno Setup; registers the DLL and the firewall rule. `cross/`: Linux cross-build.
 - `docs/internals/protocol.md` is the contract between the apps. `docs/internals/updates.md` is the
-  one between the release (`scripts/sign-update.sh`) and the apps' updaters.
+  one between the release (`scripts/sign-update.sh`, `repos.yml`) and the apps' updaters.
 
 ## Hit every surface
 

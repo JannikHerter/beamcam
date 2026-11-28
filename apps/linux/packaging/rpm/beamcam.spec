@@ -50,7 +50,7 @@ from beamcam.cli import main
 sys.exit(main())
 EOF
 chmod 755 %{buildroot}%{_bindir}/beamcam
-sh packaging/install-data.sh %{buildroot}
+sh packaging/install-data.sh %{buildroot} rpm
 
 %files
 %license LICENSE
@@ -61,6 +61,9 @@ sh packaging/install-data.sh %{buildroot}
 %{_datadir}/icons/hicolor/scalable/apps/org.beamcam.Beamcam.svg
 %{_datadir}/metainfo/org.beamcam.Beamcam.metainfo.xml
 %{_datadir}/polkit-1/actions/org.beamcam.Beamcam.policy
+%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-beamcam
+# Written by /usr/lib/beamcam/updates once the user turns on updates; removed with the package.
+%ghost %{_sysconfdir}/yum.repos.d/beamcam.repo
 
 %changelog
 * Wed Nov 25 2026 Beamcam developers <linuxisbetter@tutamail.com> - 0.2.0-1
