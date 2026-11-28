@@ -81,11 +81,18 @@ Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""Beamcam"" dir=in action=allow protocol=UDP remoteip=localsubnet program=""{app}\Beamcam.exe"" enable=yes"; Flags: runhidden
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""Beamcam"" dir=in action=allow protocol=UDP remoteip=localsubnet program=""{app}\beamcam-cli.exe"" enable=yes"; Flags: runhidden
 Filename: "{app}\Beamcam.exe"; Description: "{cm:OpenBeamcam}"; Flags: postinstall nowait skipifsilent runasoriginaluser
+; The app updates itself with /SILENT /relaunch=yes and closes for that; open it again.
+Filename: "{app}\Beamcam.exe"; Flags: nowait runasoriginaluser; Check: Relaunch
 
 [UninstallRun]
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Beamcam"""; Flags: runhidden; RunOnceId: "firewall"
 
 [Code]
+function Relaunch(): Boolean;
+begin
+  Result := WizardSilent() and (ExpandConstant('{param:relaunch|no}') = 'yes');
+end;
+
 function InitializeSetup(): Boolean;
 var
   Version: TWindowsVersion;

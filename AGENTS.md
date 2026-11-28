@@ -18,6 +18,8 @@ change adds a setting, a step or a term the user has to understand, find a way n
 
 The camera only turns on after the user allowed that computer on the phone, and the phone always
 shows that it is streaming. Video never leaves the local network. No accounts, no cloud, no analytics.
+The only thing the apps fetch from the internet is the update check, and only after the user said
+yes to it (see `docs/internals/updates.md`).
 
 ### 3. Works on ordinary networks and distros
 
@@ -49,6 +51,7 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
   - `Protocol.kt`, `Orientation.kt`: wire format and rotation math (unit tested).
   - `MainActivity.kt`: Compose UI. It only reads `WebcamState` and sends intents to the service.
   - `AppLanguage.kt`: the language picked in the app; translations are in `res/values-*/strings.xml`.
+  - `Updates.kt`: the opt-in in-app updater, only for APKs no store installed.
 - `fastlane/metadata/android/`: the phone app's F-Droid listing (texts, icon, changelogs), per language.
 - `apps/linux/src/beamcam/`
   - `protocol.py` mirrors `Protocol.kt`, `secure.py` mirrors `Secure.kt`. `client.py` is one session
@@ -67,13 +70,15 @@ A webcam that lags behind the voice is broken. Prefer dropping frames over queue
   - `src/Beamcam.Core` (C#, any OS) ports the Linux core one to one: `Protocol.cs`, `Secure.cs`,
     `Session.cs`, `Reassembler.cs`, `Mdns.cs`, `Reconnector.cs`, `Config.cs`, `Controller.cs`.
     Change both computer apps together. `Text.cs` and `Strings*.resx`: translations for the window.
+    `Updates.cs` is Windows only: the opt-in updater (Linux leaves updates to the package manager).
   - `src/Beamcam.Platform`: P/Invoke to the native DLL: `VirtualCamera.cs`, `NativeVideoOutput.cs` (decode thread).
   - `src/Beamcam` (WPF window) and `src/Beamcam.Cli` (`beamcam-cli.exe`) are thin layers over the controller.
   - `native/` (C++): `BeamcamCamera.dll`. `media_source.cpp` is the source Windows' Frame Server loads;
     `camera.cpp` creates the camera and serves it frames over a named pipe; `video.cpp` decodes with
     Media Foundation; `convert.cpp` rotates and fits (unit tested, no Windows dependency).
   - `installer/Beamcam.iss`: Inno Setup; registers the DLL and the firewall rule. `cross/`: Linux cross-build.
-- `docs/internals/protocol.md` is the contract between the apps.
+- `docs/internals/protocol.md` is the contract between the apps. `docs/internals/updates.md` is the
+  one between the release (`scripts/sign-update.sh`) and the apps' updaters.
 
 ## Hit every surface
 

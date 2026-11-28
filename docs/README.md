@@ -13,3 +13,4 @@ alone does not explain.
 
 - [Architecture overview](./internals/overview.md)
 - [Wire protocol](./internals/protocol.md)
+- [Updates](./internals/updates.md)

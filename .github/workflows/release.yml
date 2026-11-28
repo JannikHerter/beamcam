@@ -98,9 +98,40 @@ jobs:
             ${{ runner.temp }}/out/*.pkg.tar.zst
             ${{ runner.temp }}/out/*.rpm
 
+  update:
+    name: Sign the update file
+    needs: [version, ci, android]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/artifacts
+      - name: Write and sign update.json
+        env:
+          KEYSTORE_BASE64: ${{ secrets.BEAMCAM_KEYSTORE_BASE64 }}
+          BEAMCAM_KEYSTORE_PASSWORD: ${{ secrets.BEAMCAM_KEYSTORE_PASSWORD }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          # Apps never offer pre-releases (docs/internals/updates.md).
+          case "$VERSION" in *-*) echo "A pre-release: no update file."; exit 0 ;; esac
+          [ -n "$KEYSTORE_BASE64" ] && [ -n "$BEAMCAM_KEYSTORE_PASSWORD" ] || { echo "::error::The release key secrets are missing."; exit 1; }
+          export BEAMCAM_KEYSTORE="$RUNNER_TEMP/release.p12"
+          echo "$KEYSTORE_BASE64" | base64 -d > "$BEAMCAM_KEYSTORE"
+          scripts/sign-update.sh "$VERSION" "$RUNNER_TEMP"/artifacts/release-android/Beamcam-"$VERSION".apk \
+            "$RUNNER_TEMP"/artifacts/beamcam-windows-setup/Beamcam-Setup-"$VERSION".exe "$RUNNER_TEMP/out"
+          rm -f "$BEAMCAM_KEYSTORE"
+          cat "$RUNNER_TEMP/out/update.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-update
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: ignore
+
   publish:
     name: Publish the release
-    needs: [version, ci, android, linux]
+    needs: [version, ci, android, linux, update]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -119,10 +150,13 @@ jobs:
           mkdir -p "$out"
           cp "$RUNNER_TEMP"/artifacts/release-android/*.apk "$RUNNER_TEMP"/artifacts/release-linux/* \
              "$RUNNER_TEMP"/artifacts/beamcam-windows-setup/*.exe "$out/"
+          if [ -d "$RUNNER_TEMP/artifacts/release-update" ]; then cp "$RUNNER_TEMP"/artifacts/release-update/* "$out/"; fi
           (cd "$out" && sha256sum -- * > SHA256SUMS.txt && cat SHA256SUMS.txt)
           # This version's section of CHANGELOG.md, then which file to download.
           awk -v v="## $VERSION" '$0 == v {on=1; next} /^## / {on=0} on' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
           sed "s/{version}/$VERSION/g" .github/release-downloads.md >> "$RUNNER_TEMP/notes.md"
+          # Only versions with a dash are pre-releases: GitHub's "latest" link, which the README and
+          # the apps' update check use, skips them.
           prerelease=""
-          case "$VERSION" in 0.*|*-*) prerelease="--prerelease" ;; esac
+          case "$VERSION" in *-*) prerelease="--prerelease" ;; esac
           gh release create "$TAG" "$out"/* --title "Beamcam $VERSION" --notes-file "$RUNNER_TEMP/notes.md" $prerelease

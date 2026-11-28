@@ -1,4 +1,7 @@
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -26,6 +29,8 @@ public partial class MainWindow : Window, IControllerEvents
     readonly MdnsBrowser _browser;
     readonly DispatcherTimer _reconnectTimer = new();
     readonly DispatcherTimer _toastTimer = new() { Interval = TimeSpan.FromSeconds(6) };
+    readonly DispatcherTimer _updateTimer = new() { Interval = TimeSpan.FromDays(1) };
+    readonly HttpClient _http = Updates.Client();
     readonly VirtualCamera? _camera;
     readonly WriteableBitmap _preview = new(NativeVideoOutput.PreviewWidth, NativeVideoOutput.PreviewHeight, 96, 96, PixelFormats.Bgra32, null);
     List<Phone> _phones = [];
@@ -34,6 +39,9 @@ public partial class MainWindow : Window, IControllerEvents
     bool _closing;
     string _facing = "front";
     long _previewSeen;
+    Update? _update;
+    bool _updating;
+    bool _installing;
 
     public MainWindow()
     {
@@ -53,6 +61,11 @@ public partial class MainWindow : Window, IControllerEvents
         RenderPhones();
         _browser = new MdnsBrowser(phones => Dispatcher.BeginInvoke(() => OnPhones(phones)));
         _browser.Start();
+        _updateTimer.Tick += (_, _) => CheckForUpdate();
+        DeleteOldUpdates();
+        RenderUpdates();
+        if (_config.CheckUpdates == true)
+            StartUpdateChecks();
     }
 
     public void BringToFront()
@@ -334,6 +347,138 @@ public partial class MainWindow : Window, IControllerEvents
         ShowToast(message);
     }
 
+    // Updates (docs/internals/updates.md): looked for only after the user said yes.
+
+    static string UpdatesFolder() => Path.Combine(Path.GetDirectoryName(Config.DefaultPath())!, "updates");
+
+    static void DeleteOldUpdates()
+    {
+        try
+        {
+            if (Directory.Exists(UpdatesFolder()))
+                Directory.Delete(UpdatesFolder(), recursive: true);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            // The installer that just started this window may still have its file open.
+        }
+    }
+
+    void StartUpdateChecks()
+    {
+        _updateTimer.Start();
+        CheckForUpdate();
+    }
+
+    async void CheckForUpdate()
+    {
+        if (_config.CheckUpdates != true || _updating)
+            return;
+        try
+        {
+            var update = await Updates.CheckAsync(_http);
+            if (_closing || _config.CheckUpdates != true || _updating)
+                return;
+            if (update is not null)
+                Log.Info($"Beamcam {update.Version} is available");
+            _update = update;
+        }
+        catch (Exception error) when (error is HttpRequestException or OperationCanceledException or ObjectDisposedException or InvalidDataException or IOException)
+        {
+            Log.Info($"could not look for updates: {error.Message}");
+        }
+        RenderUpdates();
+    }
+
+    void RenderUpdates()
+    {
+        var asking = _config.CheckUpdates is null;
+        var offering = _config.CheckUpdates == true && _update is not null;
+        UpdatesMenu.IsChecked = _config.CheckUpdates == true;
+        UpdateBar.Visibility = asking || offering ? Visibility.Visible : Visibility.Collapsed;
+        UpdateYes.Visibility = UpdateNo.Visibility = asking ? Visibility.Visible : Visibility.Collapsed;
+        UpdateNowButton.Visibility = offering ? Visibility.Visible : Visibility.Collapsed;
+        UpdateNowButton.IsEnabled = !_updating;
+        UpdateText.Text = asking ? Text.Get("UpdatesQuestion")
+            : offering ? Text.Format(_installing ? "UpdateInstalling" : _updating ? "UpdateDownloading" : "UpdateAvailable", _update!.Version)
+            : "";
+    }
+
+    void SetCheckUpdates(bool on)
+    {
+        if (_updating)
+        {
+            RenderUpdates();
+            return;
+        }
+        _config.CheckUpdates = on;
+        _config.Save();
+        _update = null;
+        if (on)
+            StartUpdateChecks();
+        else
+            _updateTimer.Stop();
+        RenderUpdates();
+    }
+
+    void OnUpdatesYes(object sender, RoutedEventArgs e) => SetCheckUpdates(true);
+
+    void OnUpdatesNo(object sender, RoutedEventArgs e) => SetCheckUpdates(false);
+
+    void OnUpdatesMenu(object sender, RoutedEventArgs e) => SetCheckUpdates(UpdatesMenu.IsChecked);
+
+    async void OnUpdateNow(object sender, RoutedEventArgs e)
+    {
+        if (_update is not { } update || _updating)
+            return;
+        _updating = true;
+        RenderUpdates();
+        string installer;
+        try
+        {
+            installer = await Updates.DownloadAsync(_http, update, UpdatesFolder());
+        }
+        catch (Exception error) when (error is HttpRequestException or OperationCanceledException or ObjectDisposedException or InvalidDataException or IOException
+            or UnauthorizedAccessException)
+        {
+            Log.Warning($"update download failed: {error.Message}");
+            if (!_closing)
+                UpdateDone(Text.Get("UpdateFailed"));
+            return;
+        }
+        if (_closing)
+            return;
+        // Setup asks for administrator rights itself and then closes this window (CloseApplications);
+        // /relaunch makes it start Beamcam again. If it exits while this window is still open, the
+        // user said no or the install failed, and Setup showed why.
+        Process setup;
+        try
+        {
+            setup = Process.Start(new ProcessStartInfo(installer, "/SILENT /CLOSEAPPLICATIONS /NORESTART /relaunch=yes") { UseShellExecute = true })!;
+        }
+        catch (Win32Exception error)
+        {
+            Log.Info($"update not started: {error.Message}");
+            UpdateDone(Text.Get("UpdateCancelled"));
+            return;
+        }
+        Log.Info($"updating to {update.Version}");
+        _installing = true;
+        RenderUpdates();
+        await setup.WaitForExitAsync();
+        Log.Info($"setup ended with {setup.ExitCode}");
+        if (!_closing)
+            UpdateDone(Text.Get("UpdateCancelled"));
+    }
+
+    void UpdateDone(string message)
+    {
+        _updating = false;
+        _installing = false;
+        RenderUpdates();
+        ShowToast(message);
+    }
+
     void OnAbout(object sender, RoutedEventArgs e) =>
         MessageBox.Show(this, $"Beamcam {typeof(App).Assembly.GetName().Version?.ToString(3)}\n\n{Text.Get("Tagline")}\n\n© 2026 Beamcam contributors\n{Text.Get("License")}", Text.Get("AboutBeamcam"));
 
@@ -342,6 +487,8 @@ public partial class MainWindow : Window, IControllerEvents
         _closing = true;
         _browser.Stop();
         _reconnectTimer.Stop();
+        _updateTimer.Stop();
+        _http.Dispose();
         CompositionTarget.Rendering -= UpdatePreview;
         if (_controller is { } controller)
         {

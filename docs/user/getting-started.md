@@ -58,6 +58,20 @@ that with a phone you paired this way; other phones just appear in the list.
 - You can lock the phone; streaming continues. Plug it in for long calls.
 - **Disconnect** on the computer, or **Stop streaming** on the phone or in its notification, ends it.
 
+## Updates
+
+The first time you open Beamcam, the phone and the Windows app ask **Look for new versions?** If
+you tap **Yes**, they ask Beamcam's download page which version is the newest (the phone when you
+open the app, Windows when it starts and once a day); nothing else is sent. When there is one, tap **Update** on the phone and confirm, or click **Update Now** on
+Windows (then **Yes**). The first time, the phone also asks you to allow Beamcam to install apps:
+tap **Settings**, turn on **Allow from this source** and go back. Change your answer under **⋮ → Look for new versions** on the
+phone or **☰ → Look for New Versions** on Windows.
+
+If you installed Beamcam on the phone from F-Droid, the app store updates it instead and Beamcam
+doesn't ask. On Linux, your system updates Beamcam if you installed it from the AUR. Otherwise,
+install the newest `.deb`, `.rpm` or `.pkg.tar.zst` from the
+[releases](https://github.com/JannikHerter/beamcam/releases/latest) over the old one.
+
 ## Language
 
 Beamcam uses the language of your phone and of your computer. To use another one, open **⋮ →

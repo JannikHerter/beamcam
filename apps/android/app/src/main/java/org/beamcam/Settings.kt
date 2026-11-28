@@ -6,7 +6,7 @@ import android.provider.Settings as AndroidSettings
 import androidx.core.content.edit
 import java.util.UUID
 
-/** Small persistent settings: this phone's id, trusted computers, preferred camera. */
+/** Small persistent settings: this phone's id, trusted computers, preferred camera, updates. */
 class Settings(context: Context) {
     private val prefs = context.getSharedPreferences("beamcam", Context.MODE_PRIVATE)
     private val appContext = context.applicationContext
@@ -25,6 +25,11 @@ class Settings(context: Context) {
     var facing: Facing
         get() = runCatching { Facing.valueOf(prefs.getString(KEY_FACING, null) ?: "") }.getOrDefault(Facing.FRONT)
         set(value) = prefs.edit { putString(KEY_FACING, value.name) }
+
+    /** Whether the app may look for new versions; null until the user answered. */
+    var checkUpdates: Boolean?
+        get() = if (prefs.contains(KEY_CHECK_UPDATES)) prefs.getBoolean(KEY_CHECK_UPDATES, false) else null
+        set(value) = prefs.edit { if (value == null) remove(KEY_CHECK_UPDATES) else putBoolean(KEY_CHECK_UPDATES, value) }
 
     /** Newest first. Read and written from session threads and the UI, hence [lock]. */
     fun allowedComputers(): List<AllowedComputer> = synchronized(lock) {
@@ -59,6 +64,7 @@ class Settings(context: Context) {
         // Protocol 1 trusted plain client ids; they grant nothing now and are dropped on the next change.
         const val KEY_LEGACY_TRUSTED = "trusted_clients"
         const val KEY_FACING = "facing"
+        const val KEY_CHECK_UPDATES = "check_updates"
         // Settings objects in the service and the activity share one file.
         val lock = Any()
     }

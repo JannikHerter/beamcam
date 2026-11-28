@@ -204,8 +204,12 @@ beamcam-lan` (and `docker rmi dockurr/windows`).
 
 Pushing a tag `vX.Y.Z` runs `.github/workflows/release.yml`: it checks that every file says that
 version, runs CI, builds the signed phone app, the Debian, Arch and Fedora packages and the Windows installer, and
-publishes them with `SHA256SUMS.txt` as a GitHub release. Versions starting with `0.` are marked
-pre-release.
+publishes them with `SHA256SUMS.txt` as a GitHub release. It also signs `update.json` with the
+release key (`scripts/sign-update.sh`); the phone and Windows apps update from it, see
+[updates](../internals/updates.md). Releases are no longer marked pre-release, so GitHub's
+"latest" link, which the README and the apps use, finds them. (The workflow would mark a version
+with a dash as pre-release and skip its `update.json`, but the version checks only accept `X.Y.Z`
+today.)
 
 1. Set the new version everywhere `scripts/check-version.sh` looks, and raise `versionCode` in
    `apps/android/app/build.gradle.kts` by one (Android refuses an update with the same code).
@@ -231,8 +235,14 @@ F-Droid's recipe (`metadata/org.beamcam.yml` in fdroiddata) downloads our APK as
 `Beamcam-X.Y.Z.apk` from the release and builds with JDK 21; renaming the download or changing
 the JDK in `release.yml` needs the same change there, or F-Droid stops publishing updates.
 
+The in-app updater needs `REQUEST_INSTALL_PACKAGES`. Google Play only allows that permission for
+apps whose main job is installing apps, so a Play build has to drop it from the manifest (the
+updater already stays hidden when Play installed the app).
+
 The phone app is signed with the release key. Phones only accept an update signed with the same
-key, so losing it means every user has to uninstall and set Beamcam up again. The maintainer keeps
+key, so losing it means every user has to uninstall and set Beamcam up again. The same key signs
+`update.json`, and both apps carry its public half: a new key also needs an app update that
+trusts it. The maintainer keeps
 the key (`beamcam-release.p12`, alias `beamcam`) and its password backed up outside the repo; the
 workflow gets them from the repository secrets `BEAMCAM_KEYSTORE_BASE64` and
 `BEAMCAM_KEYSTORE_PASSWORD`, and refuses any certificate but the one pinned in the workflow.
