@@ -1,0 +1,104 @@
+#!/bin/sh
+# Adds (or with --remove, deletes) Beamcam's package repository, so the computer's own updates
+# bring new versions of Beamcam (docs/internals/updates.md). Runs as root; the window starts it
+# through pkexec once the user said yes. Only the .deb and .rpm install it, each with its key.
+set -eu
+
+# check-repos.sh points it at a local copy; pkexec clears the environment, so users can't.
+URL="${BEAMCAM_REPO_URL:-https://jannikherter.github.io/beamcam}"
+APT_SOURCE=/etc/apt/sources.list.d/beamcam.sources
+DNF_REPO=/etc/yum.repos.d/beamcam.repo
+# GNOME Software and dnf config-manager turn repositories off here, which outranks DNF_REPO.
+DNF_OVERRIDE=/etc/dnf/repos.override.d/99-config_manager.repo
+APT_KEY=/usr/share/keyrings/beamcam.asc
+RPM_KEY=/etc/pki/rpm-gpg/RPM-GPG-KEY-beamcam
+
+scratch="$(mktemp -d)"
+trap 'rm -rf "$scratch"' EXIT
+
+busy() {
+    echo "Your computer is installing other software. Try again when it has finished." >&2
+    exit 5
+}
+
+write() {
+    cat > "$1.tmp"
+    chmod 644 "$1.tmp"
+    mv "$1.tmp" "$1"
+}
+
+# Drops only "enabled" for beamcam, keeping any other setting an administrator made there.
+clear_dnf_override() {
+    [ -e "$DNF_OVERRIDE" ] || return 0
+    python3 -I - "$DNF_OVERRIDE" <<'EOF'
+import configparser, os, stat, sys
+path = sys.argv[1]
+parser = configparser.RawConfigParser(strict=False)
+parser.optionxform = str
+try:
+    parser.read(path)
+except (configparser.Error, UnicodeError, OSError) as error:
+    print(f"left as it is: {error}")  # not ours to repair; dnf says what is wrong with it
+    sys.exit(0)
+if parser.has_section("beamcam") and parser.remove_option("beamcam", "enabled"):
+    if not parser.options("beamcam"):
+        parser.remove_section("beamcam")
+    # Same owner and mode as before: it may hold another repository's proxy password.
+    old = os.stat(path)
+    fd = os.open(path + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as file:
+        parser.write(file)
+    os.chown(path + ".tmp", old.st_uid, old.st_gid)
+    os.chmod(path + ".tmp", stat.S_IMODE(old.st_mode))
+    os.replace(path + ".tmp", path)
+EOF
+}
+
+if [ "${1:-}" = "--remove" ]; then
+    if [ -e "$RPM_KEY" ]; then
+        # rpm trusts an imported key until it is deleted, by fingerprint; a scratch keyring tells it.
+        output="$(rpmkeys --root "$scratch" --import "$RPM_KEY" 2>&1)" || { echo "$output"; busy; }
+        for fingerprint in $(rpmkeys --root "$scratch" --list | cut -d' ' -f1); do
+            rpmkeys --delete "$fingerprint" >/dev/null 2>&1 || true # fails when it isn't trusted
+            trusted="$(rpmkeys --list)" || busy # or when rpm is busy
+            if printf '%s\n' "$trusted" | grep -q "^$fingerprint "; then busy; fi
+        done
+        clear_dnf_override
+    fi
+    rm -f "$APT_SOURCE" "$DNF_REPO"
+    exit 0
+fi
+
+if [ -e "$APT_KEY" ]; then
+    # apt stops updating anything while one repository is missing, so only add one that answers.
+    if ! /usr/lib/apt/apt-helper download-file "$URL/apt/InRelease" "$scratch/InRelease" >/dev/null 2>&1; then
+        echo "Beamcam’s download page can’t be reached. Check that this computer is online, then try again." >&2
+        exit 6
+    fi
+    write "$APT_SOURCE" <<EOF
+# Added by Beamcam when you turned on "Look for New Versions". Turn it off there to remove it.
+Types: deb
+URIs: $URL/apt/
+Suites: ./
+Signed-By: $APT_KEY
+EOF
+elif [ -e "$RPM_KEY" ]; then
+    # Trusted up front: graphical software tools can't ask whether to trust a new key. rpm's own
+    # words go to stdout, so the window shows the translated message.
+    output="$(rpmkeys --import "$RPM_KEY" 2>&1)" || { echo "$output"; busy; }
+    clear_dnf_override
+    write "$DNF_REPO" <<EOF
+# Added by Beamcam when you turned on "Look for New Versions". Turn it off there to remove it.
+[beamcam]
+name=Beamcam
+baseurl=$URL/rpm/
+enabled=1
+gpgcheck=1
+gpgkey=file://$RPM_KEY
+includepkgs=beamcam
+skip_if_unavailable=1
+EOF
+else
+    echo "This Beamcam was not installed from a .deb or .rpm package." >&2
+    exit 2
+fi

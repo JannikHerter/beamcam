@@ -35,7 +35,9 @@ menu entry or icon; only the packages below do.
 
 What users install. Each puts the app in the app menu with its icon, and installs the virtual
 camera helper with a polkit action, so the password prompt says what it is for.
-`apps/linux/packaging/install-data.sh` lists those files once for every package. Each script
+`apps/linux/packaging/install-data.sh` lists those files once for every package; the `.deb` and
+`.rpm` also get the helper that adds Beamcam's repository and its key
+([Linux repositories](#linux-repositories)). Each script
 builds the checkout in a clean container and writes to `apps/linux/packaging/dist/`; the Arch and
 Fedora ones take only the files git tracks (with your changes), so a new file needs `git add` first.
 
@@ -221,7 +223,9 @@ today.)
 2. `scripts/check-version.sh X.Y.Z`, then commit and push. It also checks that `versionCode` is
    higher than at the last release's tag.
 3. `git tag vX.Y.Z && git push origin vX.Y.Z`, and watch the Release workflow.
-4. Once the release is published, update the AUR package: `apps/linux/packaging/arch/update-aur.sh
+4. Once the release is published, the **Linux repositories** workflow (`repos.yml`) publishes its
+   `.deb` and `.rpm` in the apt and dnf repositories; watch that it ends green.
+5. Update the AUR package: `apps/linux/packaging/arch/update-aur.sh
    <checkout of ssh://aur@aur.archlinux.org/beamcam.git>` on Arch or Manjaro, then commit and push
    there. F-Droid needs nothing: it finds the new tag by itself and builds it within a few days.
 
@@ -249,3 +253,38 @@ workflow gets them from the repository secrets `BEAMCAM_KEYSTORE_BASE64` and
 To sign a release build locally, set `BEAMCAM_KEYSTORE` to the key file and
 `BEAMCAM_KEYSTORE_PASSWORD`. Without them `assembleRelease` signs with the debug key, which is
 handy for testing the shrunk release build over a debug install.
+
+### Linux repositories
+
+The `.deb` and `.rpm` add Beamcam's apt or dnf repository once the user says yes
+([updates](../internals/updates.md#linux)). `repos.yml` publishes them on GitHub Pages at
+`https://jannikherter.github.io/beamcam/` after every release. It runs from main, triggered by
+the finished Release workflow, because the `github-pages` and `linux-repos` environments only let
+the default branch use them. To publish the latest release again, run it under Actions → Linux
+repositories with its tag; that works while GitHub keeps the Release run's files (90 days). Do the
+same if a run's deploy was cancelled: one deployment waits at a time, and a newer one replaces it.
+
+Once, before the first release that should reach the repositories:
+
+1. Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+2. Settings → Environments → **New environment** `linux-repos`; under Deployment branches and tags
+   pick **Selected branches and tags** and add `main`.
+3. Add the repository key there as the secret `BEAMCAM_REPO_KEY`:
+   `gh secret set BEAMCAM_REPO_KEY --env linux-repos < beamcam-repo-key.asc`.
+4. Once this is merged, run Actions → Linux repositories by hand with the latest release's tag. It
+   checks the environment and the secret now; while every release is still a pre-release it
+   publishes nothing, so Pages is first used at the first stable release.
+
+The key (`beamcam-repo-key.asc`, an armored OpenPGP secret key without a passphrase) is backed up
+next to the release key, outside the repo. Its public half is `apps/linux/packaging/beamcam.asc`;
+the packages trust only that key, and `build-repos.sh` signs with nothing else. Losing it means a
+new key that installed packages don't trust: everyone who turned on updates would have to install
+the next `.deb` or `.rpm` by hand once.
+
+`apps/linux/packaging/check-repos.sh` tests the repositories the way users get them; CI runs it
+with a throwaway key on every pull request. To try an update from an older version, pass an older
+package that already has the helper (0.2.0 and earlier don't):
+`check-repos.sh SITE old/beamcam_X_all.deb old/beamcam-X.noarch.rpm`.
+
+Packages from 0.2.0 and earlier have no helper, so they never ask: their users install the first
+version with it by hand once, which the release notes should say.

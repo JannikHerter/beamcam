@@ -6,12 +6,26 @@
   <icon_name>org.beamcam.Beamcam</icon_name>
   <action id="org.beamcam.Beamcam.setup-virtual-camera">
     <description>Set up the Beamcam virtual camera</description>
+    <description xml:lang="de">Die virtuelle Kamera von Beamcam einrichten</description>
     <message>Enter your password to set up or remove the camera that other apps see.</message>
+    <message xml:lang="de">Gib dein Passwort ein, um die Kamera einzurichten oder zu entfernen, die andere Apps sehen.</message>
     <defaults>
       <allow_any>auth_admin</allow_any>
       <allow_inactive>auth_admin</allow_inactive>
       <allow_active>auth_admin</allow_active>
     </defaults>
     <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/beamcam/setup-virtual-camera</annotate>
+  </action>
+  <action id="org.beamcam.Beamcam.updates">
+    <description>Turn Beamcam's updates on or off</description>
+    <description xml:lang="de">Updates für Beamcam ein- oder ausschalten</description>
+    <message>Enter your password to let your computer's updates include Beamcam, or to stop that.</message>
+    <message xml:lang="de">Gib dein Passwort ein, damit die Updates deines Computers Beamcam einschließen, oder um das zu beenden.</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/beamcam/updates</annotate>
   </action>
 </policyconfig>

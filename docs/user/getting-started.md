@@ -60,16 +60,22 @@ that with a phone you paired this way; other phones just appear in the list.
 
 ## Updates
 
-The first time you open Beamcam, the phone and the Windows app ask **Look for new versions?** If
-you tap **Yes**, they ask Beamcam's download page which version is the newest (the phone when you
+The first time you open Beamcam, it asks **Look for new versions?** If you tap **Yes**, the phone
+and the Windows app ask Beamcam's download page which version is the newest (the phone when you
 open the app, Windows when it starts and once a day); nothing else is sent. When there is one, tap **Update** on the phone and confirm, or click **Update Now** on
 Windows (then **Yes**). The first time, the phone also asks you to allow Beamcam to install apps:
 tap **Settings**, turn on **Allow from this source** and go back. Change your answer under **⋮ → Look for new versions** on the
 phone or **☰ → Look for New Versions** on Windows.
 
+On Linux, if you installed the `.deb` or `.rpm`, click **Yes** and enter your password. New
+versions of Beamcam then come with your computer's other updates, in its software tool or with
+`sudo apt update && sudo apt upgrade` or `sudo dnf upgrade`. Change your answer under
+**☰ → Look for New Versions**. Beamcam 0.2.0 and older don't ask yet: install the newest `.deb` or
+`.rpm` once by hand.
+
 If you installed Beamcam on the phone from F-Droid, the app store updates it instead and Beamcam
-doesn't ask. On Linux, your system updates Beamcam if you installed it from the AUR. Otherwise,
-install the newest `.deb`, `.rpm` or `.pkg.tar.zst` from the
+doesn't ask. On Linux, the AUR updates Beamcam if you installed it from there. The Arch package
+from the releases doesn't ask: install the newest `.pkg.tar.zst` from the
 [releases](https://github.com/JannikHerter/beamcam/releases/latest) over the old one.
 
 ## Language
@@ -85,3 +91,5 @@ Language** on the phone or **☰ → Language** on the computer.
   **☰ → Remove Virtual Camera** removes the camera. On Windows the camera goes away when you close
   Beamcam, and uninstalling it in **Settings → Apps** removes the app and the camera. It keeps your
   paired phones in case you install it again, so **Forget** them first if you don't want that.
+- Updates: **⋮ → Look for new versions** on the phone, **☰ → Look for New Versions** on the
+  computer. On Linux, uninstalling Beamcam also removes its repository.
