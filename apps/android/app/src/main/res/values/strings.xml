@@ -54,4 +54,17 @@
     <string name="notification_ready_text">Open Beamcam on your computer to connect.</string>
     <string name="notification_streaming_title">Streaming to %1$s</string>
     <string name="notification_streaming_text">Your camera is being used as a webcam.</string>
+    <string name="update_ask_title">Look for new versions?</string>
+    <string name="update_ask_text">When you open Beamcam, it then asks its download page which version is the newest. Nothing else is sent.</string>
+    <string name="action_yes">Yes</string>
+    <string name="action_no">No</string>
+    <string name="update_available_title">Beamcam %1$s is ready</string>
+    <string name="update_available_text">Tap Update and confirm. The first time, Android also asks you to allow Beamcam to install apps.</string>
+    <string name="update_failed">The update didn’t download. Check your internet connection and try again.</string>
+    <string name="update_downloading">Getting the update…</string>
+    <string name="action_update">Update</string>
+    <string name="menu_check_updates">Look for new versions</string>
+    <string name="channel_updates">Updates</string>
+    <string name="updated_title">Beamcam is up to date</string>
+    <string name="updated_text">Tap to open Beamcam again.</string>
 </resources>

@@ -78,4 +78,14 @@
   <data name="ConnectInApp" xml:space="preserve"><value>Verbinde es in der Beamcam-App auf diesem Computer.</value></data>
   <data name="CameraInUse" xml:space="preserve"><value>Ein anderes Beamcam auf diesem Computer nutzt die Kamera. Schließe es und versuche es erneut.</value></data>
   <data name="PhoneChanged" xml:space="preserve"><value>Dieses Handy hat sich seit dem Koppeln verändert. Wenn du Beamcam darauf nicht neu installiert hast, verbinde dich nicht.</value></data>
+  <data name="UpdatesQuestion" xml:space="preserve"><value>Nach neuen Versionen von Beamcam suchen? Beamcam fragt dann beim Start und einmal am Tag auf seiner Download-Seite, welche Version die neueste ist. Sonst wird nichts gesendet.</value></data>
+  <data name="Yes" xml:space="preserve"><value>Ja</value></data>
+  <data name="No" xml:space="preserve"><value>Nein</value></data>
+  <data name="CheckForUpdatesMenu" xml:space="preserve"><value>Nach neuen Versionen suchen</value></data>
+  <data name="UpdateAvailable" xml:space="preserve"><value>Beamcam {0} ist bereit. Beim Aktualisieren schließt sich Beamcam kurz.</value></data>
+  <data name="UpdateInstalling" xml:space="preserve"><value>Beamcam {0} wird installiert… Wenn Windows fragt, ob Änderungen vorgenommen werden dürfen, klicke auf „Ja“.</value></data>
+  <data name="UpdateNow" xml:space="preserve"><value>Jetzt aktualisieren</value></data>
+  <data name="UpdateDownloading" xml:space="preserve"><value>Beamcam {0} wird geladen…</value></data>
+  <data name="UpdateFailed" xml:space="preserve"><value>Das Update konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut.</value></data>
+  <data name="UpdateCancelled" xml:space="preserve"><value>Beamcam wurde nicht aktualisiert. Klicke auf „Jetzt aktualisieren“, um es erneut zu versuchen.</value></data>
 </root>

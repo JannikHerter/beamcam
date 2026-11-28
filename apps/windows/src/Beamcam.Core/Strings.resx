@@ -78,4 +78,14 @@
   <data name="ConnectInApp" xml:space="preserve"><value>Connect it in the Beamcam app on this computer.</value></data>
   <data name="CameraInUse" xml:space="preserve"><value>Another Beamcam on this computer is using the camera. Close it and try again.</value></data>
   <data name="PhoneChanged" xml:space="preserve"><value>This phone has changed since you paired it. If you didn’t reinstall Beamcam on it, don’t connect.</value></data>
+  <data name="UpdatesQuestion" xml:space="preserve"><value>Look for new versions of Beamcam? Beamcam then asks its download page which version is the newest, when it starts and once a day. Nothing else is sent.</value></data>
+  <data name="Yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="No" xml:space="preserve"><value>No</value></data>
+  <data name="CheckForUpdatesMenu" xml:space="preserve"><value>Look for New Versions</value></data>
+  <data name="UpdateAvailable" xml:space="preserve"><value>Beamcam {0} is ready. Updating closes Beamcam for a moment.</value></data>
+  <data name="UpdateInstalling" xml:space="preserve"><value>Installing Beamcam {0}… When Windows asks whether it may make changes, click Yes.</value></data>
+  <data name="UpdateNow" xml:space="preserve"><value>Update Now</value></data>
+  <data name="UpdateDownloading" xml:space="preserve"><value>Downloading Beamcam {0}…</value></data>
+  <data name="UpdateFailed" xml:space="preserve"><value>The update didn’t download. Check your internet connection and try again.</value></data>
+  <data name="UpdateCancelled" xml:space="preserve"><value>Beamcam wasn’t updated. Click Update Now to try again.</value></data>
 </root>

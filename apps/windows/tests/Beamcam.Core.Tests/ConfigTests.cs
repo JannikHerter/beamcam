@@ -22,6 +22,19 @@ public sealed class ConfigTests : IDisposable
     }
 
     [Fact]
+    public void TheUpdateAnswerIsKept()
+    {
+        Assert.Null(Config.Load(ConfigPath).CheckUpdates);
+        var config = Config.Load(ConfigPath);
+        config.CheckUpdates = false;
+        config.Save();
+        Assert.False(Config.Load(ConfigPath).CheckUpdates);
+        config.CheckUpdates = true;
+        config.Save();
+        Assert.True(Config.Load(ConfigPath).CheckUpdates);
+    }
+
+    [Fact]
     public void NewestConnectionFirstAndRenamesAreKept()
     {
         var config = Config.Load(ConfigPath);

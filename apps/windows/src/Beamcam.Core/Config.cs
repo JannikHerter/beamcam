@@ -31,6 +31,8 @@ public sealed class Config : IPairingStore
     public string? LastAddress { get; set; }
     /// <summary>The language picked in the window; null follows Windows.</summary>
     public string? Language { get; set; }
+    /// <summary>Whether the window may look for new versions; null until the user answered.</summary>
+    public bool? CheckUpdates { get; set; }
 
     Config(string path) => _path = path;
 
@@ -53,6 +55,7 @@ public sealed class Config : IPairingStore
             config.LastPhoneId = JsonText(data["last_phone_id"]);
             config.LastAddress = JsonText(data["last_address"]);
             config.Language = JsonText(data["language"]);
+            config.CheckUpdates = data["check_updates"] is JsonValue checkUpdates && checkUpdates.TryGetValue<bool>(out var check) ? check : null;
             if (data["pairings"] is JsonObject pairings)
             {
                 foreach (var (fingerprint, node) in pairings)
@@ -92,7 +95,7 @@ public sealed class Config : IPairingStore
                 {
                     ["secret"] = p.Secret, ["phone_id"] = p.PhoneId, ["name"] = p.Name, ["last_connected"] = p.LastConnected,
                 };
-            var data = new JsonObject { ["last_phone_id"] = LastPhoneId, ["last_address"] = LastAddress, ["language"] = Language, ["pairings"] = pairings };
+            var data = new JsonObject { ["last_phone_id"] = LastPhoneId, ["last_address"] = LastAddress, ["language"] = Language, ["check_updates"] = CheckUpdates, ["pairings"] = pairings };
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(_path)!);

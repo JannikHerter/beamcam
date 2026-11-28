@@ -19,20 +19,40 @@
           <MenuItem Header="{app:Tr ConnectByAddressMenu}" Click="OnConnectByAddress" />
           <MenuItem Header="{app:Tr PairedPhones}" Click="OnPairedPhones" />
           <MenuItem Header="{app:Tr LanguageMenu}" Click="OnLanguage" />
+          <MenuItem x:Name="UpdatesMenu" Header="{app:Tr CheckForUpdatesMenu}" IsCheckable="True" Click="OnUpdatesMenu" />
           <Separator />
           <MenuItem Header="{app:Tr AboutBeamcam}" Click="OnAbout" />
         </ContextMenu>
       </Button.ContextMenu>
     </Button>
 
-    <Border x:Name="Banner" Grid.Row="1" Visibility="Collapsed" Margin="16,8,16,0" Padding="14,10" CornerRadius="6"
-            BorderThickness="1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-            Background="{DynamicResource SystemFillColorCautionBackgroundBrush}">
-      <DockPanel>
-        <app:Glyph DockPanel.Dock="Left" FontFamily="{StaticResource Icons}" Text="&#xE7BA;" FontSize="16" Margin="0,1,10,0" />
-        <TextBlock x:Name="BannerText" TextWrapping="Wrap" />
-      </DockPanel>
-    </Border>
+    <StackPanel Grid.Row="1">
+      <Border x:Name="Banner" Visibility="Collapsed" Margin="16,8,16,0" Padding="14,10" CornerRadius="6"
+              BorderThickness="1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+              Background="{DynamicResource SystemFillColorCautionBackgroundBrush}">
+        <DockPanel>
+          <app:Glyph DockPanel.Dock="Left" FontFamily="{StaticResource Icons}" Text="&#xE7BA;" FontSize="16" Margin="0,1,10,0" />
+          <TextBlock x:Name="BannerText" TextWrapping="Wrap" />
+        </DockPanel>
+      </Border>
+
+      <!-- Asks whether to look for new versions, then offers one -->
+      <Border x:Name="UpdateBar" Visibility="Collapsed" Margin="16,8,16,0" Padding="14,10" CornerRadius="6"
+              BorderThickness="1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+              Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+        <DockPanel>
+          <app:Glyph DockPanel.Dock="Left" FontFamily="{StaticResource Icons}" Text="&#xE896;" FontSize="16" Margin="0,1,10,0"
+                     VerticalAlignment="Center" />
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+            <Button x:Name="UpdateYes" Content="{app:Tr Yes}" Style="{DynamicResource AccentButtonStyle}" Padding="16,4" Click="OnUpdatesYes" />
+            <Button x:Name="UpdateNo" Content="{app:Tr No}" Padding="16,4" Margin="8,0,0,0" Click="OnUpdatesNo" />
+            <Button x:Name="UpdateNowButton" Content="{app:Tr UpdateNow}" Style="{DynamicResource AccentButtonStyle}" Padding="16,4"
+                    Click="OnUpdateNow" />
+          </StackPanel>
+          <TextBlock x:Name="UpdateText" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite" />
+        </DockPanel>
+      </Border>
+    </StackPanel>
 
     <Grid Grid.Row="2">
       <!-- Looking for phones / choose a phone -->

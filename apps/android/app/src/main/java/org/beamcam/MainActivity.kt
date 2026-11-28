@@ -44,6 +44,8 @@ import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -105,6 +107,7 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         WebcamState.appVisible = true
+        AppUpdates.dismissUpdatedNotification(this)
     }
 
     override fun onStop() {
@@ -136,6 +139,15 @@ private fun App() {
     var allowedComputers by remember { mutableStateOf<List<AllowedComputer>?>(null) }
     var choosingLanguage by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val canUpdate = remember { AppUpdates.canUpdateItself(context) }
+    var checkUpdates by remember { mutableStateOf(settings.checkUpdates) }
+    val update by AppUpdates.status.collectAsStateWithLifecycle()
+
+    fun setCheckUpdates(on: Boolean) {
+        settings.checkUpdates = on
+        checkUpdates = on
+        if (on) AppUpdates.checkIfDue(context, now = true) else AppUpdates.turnedOff()
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         askedOnce = true
@@ -148,6 +160,18 @@ private fun App() {
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
         cameraGranted = context.hasCamera()
         if (cameraGranted && WebcamState.state.value.status == WebcamStatus.Stopped) WebcamService.start(context)
+        AppUpdates.appStarted()
+        if (canUpdate && settings.checkUpdates == true) AppUpdates.checkIfDue(context)
+    }
+
+    // Android's "Install?" screen, started from here because the app is on screen now. Installing
+    // restarts the app, so it never opens during a stream.
+    val streaming = state.status is WebcamStatus.Streaming
+    LaunchedEffect(update, streaming) {
+        (update as? UpdateStatus.Confirm)?.takeUnless { streaming }?.let {
+            AppUpdates.confirming(it.update)
+            runCatching { context.startActivity(it.intent) }.onFailure { _ -> AppUpdates.finished(it.update, failed = true) }
+        }
     }
 
     LaunchedEffect(state.message) {
@@ -166,6 +190,8 @@ private fun App() {
                         OverflowMenu(
                             onAllowedComputers = { allowedComputers = settings.allowedComputers() },
                             onLanguage = { choosingLanguage = true },
+                            checkUpdates = if (canUpdate) checkUpdates == true else null,
+                            onCheckUpdates = { setCheckUpdates(!(checkUpdates ?: false)) },
                             onTurnOff = { WebcamService.stop(context) },
                             canTurnOff = state.status != WebcamStatus.Stopped,
                         )
@@ -202,6 +228,15 @@ private fun App() {
                 )
                 status == WebcamStatus.Stopped -> OffScreen(onTurnOn = { WebcamService.start(context) })
                 else -> ReadyScreen(deviceName = settings.deviceName, port = state.port)
+            }
+            // Installing restarts the app, so never while streaming.
+            if (canUpdate && cameraGranted && status !is WebcamStatus.Streaming) {
+                UpdateCard(
+                    asking = checkUpdates == null,
+                    status = if (checkUpdates == true) update else UpdateStatus.None,
+                    onAnswer = ::setCheckUpdates,
+                    onUpdate = { AppUpdates.install(context, it) },
+                )
             }
         }
     }
@@ -335,8 +370,46 @@ private fun lastConnected(computer: AllowedComputer, streamingTo: String?): Stri
     }
 }
 
+/** Asks once whether to look for new versions, then offers one when there is. */
 @Composable
-private fun OverflowMenu(onAllowedComputers: () -> Unit, onLanguage: () -> Unit, onTurnOff: () -> Unit, canTurnOff: Boolean) {
+private fun UpdateCard(asking: Boolean, status: UpdateStatus, onAnswer: (Boolean) -> Unit, onUpdate: (Update) -> Unit) {
+    if (!asking && status == UpdateStatus.None) return
+    Spacer(Modifier.height(32.dp))
+    Card(modifier = Modifier.fillMaxWidth().widthIn(max = 480.dp)) {
+        Column(Modifier.padding(20.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            val title = status.update?.takeUnless { asking }?.let { stringResource(R.string.update_available_title, it.version) }
+                ?: stringResource(R.string.update_ask_title)
+            Text(title, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(8.dp))
+            val text = when {
+                asking -> stringResource(R.string.update_ask_text)
+                status is UpdateStatus.Available && status.failed -> stringResource(R.string.update_failed)
+                status is UpdateStatus.Available -> stringResource(R.string.update_available_text)
+                else -> stringResource(R.string.update_downloading)
+            }
+            Text(text, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(16.dp))
+            when {
+                asking -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(onClick = { onAnswer(false) }) { Text(stringResource(R.string.action_no)) }
+                    Button(onClick = { onAnswer(true) }) { Text(stringResource(R.string.action_yes)) }
+                }
+                status is UpdateStatus.Available -> Button(onClick = { onUpdate(status.update) }) { Text(stringResource(R.string.action_update)) }
+                else -> CircularProgressIndicator(Modifier.size(32.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun OverflowMenu(
+    onAllowedComputers: () -> Unit,
+    onLanguage: () -> Unit,
+    checkUpdates: Boolean?,
+    onCheckUpdates: () -> Unit,
+    onTurnOff: () -> Unit,
+    canTurnOff: Boolean,
+) {
     var open by remember { mutableStateOf(false) }
     IconButton(onClick = { open = true }) {
         Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.menu_more))
@@ -344,6 +417,13 @@ private fun OverflowMenu(onAllowedComputers: () -> Unit, onLanguage: () -> Unit,
     DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
         DropdownMenuItem(text = { Text(stringResource(R.string.menu_allowed_computers)) }, onClick = { open = false; onAllowedComputers() })
         DropdownMenuItem(text = { Text(stringResource(R.string.menu_language)) }, onClick = { open = false; onLanguage() })
+        if (checkUpdates != null) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.menu_check_updates)) },
+                trailingIcon = { Checkbox(checked = checkUpdates, onCheckedChange = null) },
+                onClick = { open = false; onCheckUpdates() },
+            )
+        }
         if (canTurnOff) {
             DropdownMenuItem(text = { Text(stringResource(R.string.action_turn_off)) }, onClick = { open = false; onTurnOff() })
         }
